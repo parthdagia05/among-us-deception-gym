@@ -12,6 +12,16 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 env = AmongUsEnv()
 
 
+@app.get("/")
+def root():
+    return {
+        "name": "Among Us Deception Gym",
+        "version": "1.0.0",
+        "status": "ok",
+        "endpoints": ["/health", "/reset", "/step", "/state", "/ws"]
+    }
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "environment": "among_us_deception_gym"}
