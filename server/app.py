@@ -1,15 +1,18 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, Header
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import json
+import os
 
 from server.models import Action, DifficultyConfig, Observation, StepResult
 from server.environment import AmongUsEnv
+from server.environment_multi import MultiAgentAmongUsEnv
 
 app = FastAPI(title="Among Us Deception Gym", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 env = AmongUsEnv()
+multi_env = MultiAgentAmongUsEnv()
 
 
 @app.get("/")
@@ -54,6 +57,42 @@ def training_game_info():
         "confident_innocent_name": s.confident_innocent_name,
         "alive_players": s.alive_players,
     }
+
+
+@app.post("/multi/reset")
+def multi_reset(difficulty: Optional[DifficultyConfig] = None,
+                x_hf_token: Optional[str] = Header(default=None)):
+    token = x_hf_token or os.environ.get("HF_TOKEN")
+    return multi_env.reset(difficulty=difficulty, hf_token=token)
+
+
+@app.get("/multi/observation/{game_id}/{player_name}")
+def multi_observation(game_id: str, player_name: str):
+    obs = multi_env.get_observation(game_id, player_name)
+    if obs is None:
+        return {"error": f"Game {game_id} or player {player_name} not found"}
+    return obs
+
+
+@app.post("/multi/vote")
+def multi_vote(payload: dict):
+    game_id = payload.get("game_id", "")
+    player_name = payload.get("player_name", "")
+    vote_target = payload.get("vote_target", "")
+    return multi_env.submit_vote(game_id, player_name, vote_target)
+
+
+@app.get("/multi/resolve/{game_id}")
+def multi_resolve(game_id: str):
+    return multi_env.resolve(game_id)
+
+
+@app.get("/multi/session/{game_id}")
+def multi_session(game_id: str):
+    info = multi_env.get_session_info(game_id)
+    if info is None:
+        return {"error": f"Game {game_id} not found"}
+    return info
 
 
 @app.websocket("/ws")
