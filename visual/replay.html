@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Among Us Deception Gym - Game Replay</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #0a0a1a;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+        }
+        h1 {
+            text-align: center;
+            color: #ff4444;
+            padding: 20px;
+            font-size: 1.8em;
+            text-shadow: 0 0 10px #ff4444;
+            letter-spacing: 2px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            padding: 0 20px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .panel {
+            background: #111122;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .panel h2 {
+            color: #aaa;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+        }
+        /* MAP */
+        .map-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 75%;
+            background: #0d0d1f;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .map-svg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+        .room {
+            fill: #1a1a3a;
+            stroke: #3a3a6a;
+            stroke-width: 2;
+            cursor: pointer;
+            transition: fill 0.2s;
+        }
+        .room:hover { fill: #252550; }
+        .room.kill-loc { stroke: #ff4444; stroke-width: 3; fill: #2a0000; }
+        .room-label {
+            fill: #8888cc;
+            font-size: 9px;
+            font-family: 'Courier New', monospace;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+        .conn { stroke: #2a2a4a; stroke-width: 1.5; }
+        /* Player blobs */
+        .player-dot { transition: cx 0.5s, cy 0.5s; cursor: pointer; }
+        .player-label {
+            font-size: 7px;
+            font-family: 'Courier New', monospace;
+            text-anchor: middle;
+            dominant-baseline: hanging;
+            pointer-events: none;
+        }
+        /* STATEMENTS */
+        .statement-list { overflow-y: auto; max-height: 320px; }
+        .statement-item {
+            padding: 8px;
+            margin-bottom: 6px;
+            border-radius: 4px;
+            border-left: 3px solid #444;
+            background: #0d0d20;
+            font-size: 0.8em;
+            line-height: 1.4;
+        }
+        .statement-item .player-name {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        .statement-item.impostor { border-left-color: #ff4444; background: #1a0000; }
+        .statement-item.crew { border-left-color: #4488ff; background: #000d1a; }
+        .statement-item.victim { border-left-color: #888; background: #0a0a0a; opacity: 0.5; }
+        /* INVESTIGATION LOG */
+        .log-list { overflow-y: auto; max-height: 280px; }
+        .log-item {
+            padding: 6px 8px;
+            margin-bottom: 4px;
+            border-radius: 3px;
+            font-size: 0.75em;
+            background: #0d0d20;
+            border-left: 2px solid #555;
+        }
+        .log-item.tool { border-left-color: #44aaff; }
+        .log-item.vote { border-left-color: #ffaa44; }
+        .log-item.result { border-left-color: #44ff88; color: #44ff88; }
+        .log-item.wrong { border-left-color: #ff4444; color: #ff6666; }
+        .turn-badge {
+            display: inline-block;
+            background: #333;
+            color: #aaa;
+            border-radius: 3px;
+            padding: 1px 5px;
+            font-size: 0.85em;
+            margin-right: 6px;
+        }
+        /* VERDICT */
+        .verdict-panel {
+            grid-column: 1 / -1;
+            text-align: center;
+        }
+        .verdict-box {
+            display: inline-block;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+        .verdict-box.correct {
+            background: #004400;
+            border: 2px solid #00ff00;
+            color: #00ff88;
+        }
+        .verdict-box.wrong {
+            background: #440000;
+            border: 2px solid #ff4444;
+            color: #ff6666;
+        }
+        .score-grid {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .score-item {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 10px 20px;
+            text-align: center;
+        }
+        .score-item .label { color: #888; font-size: 0.75em; text-transform: uppercase; }
+        .score-item .value { color: #fff; font-size: 1.4em; font-weight: bold; margin-top: 4px; }
+        .score-item .value.good { color: #44ff88; }
+        .score-item .value.bad { color: #ff6666; }
+        /* PLAYER COLORS */
+        .color-Red { color: #ff4444; }
+        .color-Blue { color: #4488ff; }
+        .color-Green { color: #44cc44; }
+        .color-Yellow { color: #ffff44; }
+        .color-Purple { color: #cc44ff; }
+        .color-Orange { color: #ff8844; }
+        .color-White { color: #ffffff; }
+        /* Controls */
+        .controls {
+            text-align: center;
+            padding: 10px 20px;
+        }
+        .btn {
+            background: #1a1a3a;
+            border: 1px solid #4444aa;
+            color: #aaaaff;
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            margin: 0 4px;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #252560; }
+        .btn:active { background: #3a3a80; }
+        .game-info {
+            text-align: center;
+            color: #666;
+            font-size: 0.8em;
+            padding: 4px;
+        }
+        /* Tooltip */
+        .tooltip {
+            position: fixed;
+            background: #1a1a3a;
+            border: 1px solid #555;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            pointer-events: none;
+            display: none;
+            z-index: 100;
+            max-width: 250px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>AMONG US DECEPTION GYM</h1>
+<p class="subtitle">Agent Replay Visualizer - See how the model investigates and votes</p>
+
+<div class="controls">
+    <button class="btn" onclick="prevStep()">&#9664; Prev</button>
+    <button class="btn" onclick="nextStep()">Next &#9654;</button>
+    <button class="btn" onclick="autoPlay()">&#9654;&#9654; Auto</button>
+    <button class="btn" onclick="loadNewGame()">New Game</button>
+    <button class="btn" onclick="revealImpostors()">Reveal Impostors</button>
+</div>
+<div class="game-info" id="gameInfo">Game ID: loading...</div>
+
+<div class="container">
+    <!-- MAP PANEL -->
+    <div class="panel">
+        <h2>Map - Player Positions</h2>
+        <div class="map-container">
+            <svg class="map-svg" viewBox="0 0 280 210" id="mapSvg">
+                <!-- Connections -->
+                <!-- CAFETERIA-WEAPONS, CAFETERIA-MEDBAY -->
+                <line class="conn" x1="70" y1="30" x2="140" y2="30"/>
+                <line class="conn" x1="70" y1="30" x2="70" y2="80"/>
+                <!-- WEAPONS-NAVIGATION, WEAPONS-ADMIN -->
+                <line class="conn" x1="140" y1="30" x2="210" y2="30"/>
+                <line class="conn" x1="140" y1="30" x2="140" y2="80"/>
+                <!-- NAVIGATION-O2 -->
+                <line class="conn" x1="210" y1="30" x2="210" y2="80"/>
+                <!-- MEDBAY-ADMIN, MEDBAY-ELECTRICAL -->
+                <line class="conn" x1="70" y1="80" x2="140" y2="80"/>
+                <line class="conn" x1="70" y1="80" x2="70" y2="130"/>
+                <!-- ADMIN-O2, ADMIN-STORAGE -->
+                <line class="conn" x1="140" y1="80" x2="210" y2="80"/>
+                <line class="conn" x1="140" y1="80" x2="140" y2="130"/>
+                <!-- O2-REACTOR -->
+                <line class="conn" x1="210" y1="80" x2="210" y2="130"/>
+                <!-- ELECTRICAL-STORAGE -->
+                <line class="conn" x1="70" y1="130" x2="140" y2="130"/>
+                <!-- STORAGE-REACTOR -->
+                <line class="conn" x1="140" y1="130" x2="210" y2="130"/>
+
+                <!-- Rooms -->
+                <rect class="room" id="room-CAFETERIA" x="30" y="10" width="80" height="40" rx="4"/>
+                <text class="room-label" x="70" y="30">CAFETERIA</text>
+
+                <rect class="room" id="room-WEAPONS" x="100" y="10" width="80" height="40" rx="4"/>
+                <text class="room-label" x="140" y="30">WEAPONS</text>
+
+                <rect class="room" id="room-NAVIGATION" x="170" y="10" width="80" height="40" rx="4"/>
+                <text class="room-label" x="210" y="30">NAVIGATION</text>
+
+                <rect class="room" id="room-MEDBAY" x="30" y="60" width="80" height="40" rx="4"/>
+                <text class="room-label" x="70" y="80">MEDBAY</text>
+
+                <rect class="room" id="room-ADMIN" x="100" y="60" width="80" height="40" rx="4"/>
+                <text class="room-label" x="140" y="80">ADMIN</text>
+
+                <rect class="room" id="room-O2" x="170" y="60" width="80" height="40" rx="4"/>
+                <text class="room-label" x="210" y="80">O2</text>
+
+                <rect class="room" id="room-ELECTRICAL" x="30" y="110" width="80" height="40" rx="4"/>
+                <text class="room-label" x="70" y="130">ELECTRICAL</text>
+
+                <rect class="room" id="room-STORAGE" x="100" y="110" width="80" height="40" rx="4"/>
+                <text class="room-label" x="140" y="130">STORAGE</text>
+
+                <rect class="room" id="room-REACTOR" x="170" y="110" width="80" height="40" rx="4"/>
+                <text class="room-label" x="210" y="130">REACTOR</text>
+
+                <!-- Players group (rendered on top) -->
+                <g id="playersGroup"></g>
+            </svg>
+        </div>
+        <div id="mapLegend" style="margin-top:8px; font-size:0.75em; color:#666;"></div>
+    </div>
+
+    <!-- STATEMENTS PANEL -->
+    <div class="panel">
+        <h2>Player Statements</h2>
+        <div class="statement-list" id="statementList">
+            <div style="color:#555; font-size:0.85em;">Loading game data...</div>
+        </div>
+    </div>
+
+    <!-- INVESTIGATION LOG PANEL -->
+    <div class="panel">
+        <h2>Agent Investigation Log</h2>
+        <div class="log-list" id="logList">
+            <div style="color:#555; font-size:0.85em;">Agent hasn't taken any actions yet.</div>
+        </div>
+    </div>
+
+    <!-- VERDICT PANEL -->
+    <div class="panel verdict-panel" id="verdictPanel" style="display:none;">
+        <h2>Verdict</h2>
+        <div id="verdictBox"></div>
+        <div class="score-grid" id="scoreGrid"></div>
+    </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ============================================================
+// SAMPLE GAME DATA (embedded)
+// ============================================================
+const SAMPLE_GAMES = [
+    {
+        game_id: "a3f2c9d1",
+        kill_location: "ELECTRICAL",
+        kill_victim: "Green",
+        body_found_by: "Yellow",
+        impostor_names: ["Red"],
+        confident_innocent: "Blue",
+        players: [
+            { name: "Red",    role: "impostor", location: "MEDBAY",    claimed_location: "ELECTRICAL", task: "submit_scan",        statement: "I was in Electrical the whole time doing fix_wiring. I was alone the whole time. I'm 100% clean.", personality: "confident" },
+            { name: "Blue",   role: "crew",     location: "ELECTRICAL", claimed_location: "ELECTRICAL", task: "fix_wiring",         statement: "I went straight to Electrical and completed fix_wiring. I was alone the whole time. Check the cameras.", personality: "confident" },
+            { name: "Yellow", role: "crew",     location: "STORAGE",    claimed_location: "STORAGE",    task: "fuel_engines",       statement: "Was in Storage. Fuel_engines. That's all. I found the body in Electrical.", personality: "quiet" },
+            { name: "Purple", role: "crew",     location: "CAFETERIA",  claimed_location: "CAFETERIA",  task: "download_data",      statement: "I mean I was probably in Cafeteria? Download_data. I was alone the whole time. I lose track sometimes.", personality: "nervous" },
+            { name: "Orange", role: "crew",     location: "WEAPONS",    claimed_location: "WEAPONS",    task: "clear_asteroids",    statement: "I was in Weapons doing clear_asteroids. I was alone the whole time. But honestly Purple was acting weird.", personality: "accusatory" }
+        ],
+        agent_trajectory: [
+            { turn: 1, action: "tool_call", tool: "read_statements", args: {}, result: "=== PLAYER STATEMENTS ===\nRed: I was in Electrical the whole time doing fix_wiring...\nBlue: I went straight to Electrical and completed fix_wiring...\nYellow: Was in Storage. Fuel_engines. Found the body.\nPurple: I mean I was probably in Cafeteria? Download_data...\nOrange: I was in Weapons doing clear_asteroids..." },
+            { turn: 2, action: "tool_call", tool: "check_player_presence", args: { location: "ELECTRICAL" }, result: "Players actually present in Electrical: Blue. No other players were in Electrical." },
+            { turn: 3, action: "tool_call", tool: "cross_reference", args: {}, result: "=== CROSS-REFERENCE ANALYSIS ===\nCONTRADICTIONS FOUND:\n- Red claims Electrical, but was not actually present there\n- Blue was alone in Electrical\n\nCONFIRMED:\n  No mutual confirmations found." },
+            { turn: 4, action: "vote", target: "Red", reasoning: "Red claims Electrical but Blue was alone there. Red is the impostor." }
+        ],
+        result: {
+            correct: true,
+            vote_score: 1.0,
+            investigation_score: 0.13,
+            deception_score: 0.1,
+            anti_cheat_score: 0.0,
+            total_reward: 0.76,
+            message: "You voted for Red. Red was THE IMPOSTOR! Crew wins!"
+        }
+    },
+    {
+        game_id: "b7e1a5f3",
+        kill_location: "REACTOR",
+        kill_victim: "White",
+        body_found_by: "Orange",
+        impostor_names: ["Blue"],
+        confident_innocent: "Red",
+        players: [
+            { name: "Blue",   role: "impostor", location: "O2",         claimed_location: "CAFETERIA",  task: "download_data",   statement: "I was alone in Cafeteria doing download_data. Nobody can confirm but I was there.", personality: "corroboration_gap" },
+            { name: "Red",    role: "crew",     location: "WEAPONS",    claimed_location: "WEAPONS",    task: "clear_asteroids", statement: "Definitely Weapons. Did clear_asteroids. I was alone the whole time. Can vouch for myself.", personality: "confident" },
+            { name: "Yellow", role: "crew",     location: "NAVIGATION", claimed_location: "NAVIGATION", task: "chart_course",    statement: "So I went to Navigation right after the last meeting. Did chart_course. I was alone the whole time.", personality: "detailed" },
+            { name: "Purple", role: "crew",     location: "ADMIN",      claimed_location: "ADMIN",      task: "swipe_card",      statement: "Was in Admin. Swipe_card. I was alone the whole time. That's all.", personality: "quiet" },
+            { name: "Orange", role: "crew",     location: "STORAGE",    claimed_location: "STORAGE",    task: "empty_chute",     statement: "I was in Storage doing empty_chute. I was alone the whole time. I found the body in Reactor.", personality: "nervous" }
+        ],
+        agent_trajectory: [
+            { turn: 1, action: "tool_call", tool: "read_statements", args: {}, result: "=== PLAYER STATEMENTS ===\nBlue: I was alone in Cafeteria doing download_data...\nRed: Definitely Weapons. Did clear_asteroids...\nYellow: So I went to Navigation...\nPurple: Was in Admin. Swipe_card...\nOrange: I was in Storage doing empty_chute..." },
+            { turn: 2, action: "tool_call", tool: "check_player_presence", args: { location: "CAFETERIA" }, result: "Players actually present in Cafeteria: Nobody was detected in Cafeteria." },
+            { turn: 3, action: "tool_call", tool: "check_adjacency", args: { location1: "O2", location2: "REACTOR" }, result: "O2 and Reactor: ADJACENT (directly connected)." },
+            { turn: 4, action: "vote", target: "Blue", reasoning: "Blue claims Cafeteria but nobody was actually there. Blue is the impostor - they were near the kill location in O2." }
+        ],
+        result: {
+            correct: true,
+            vote_score: 1.0,
+            investigation_score: 0.11,
+            deception_score: 0.1,
+            anti_cheat_score: 0.0,
+            total_reward: 0.73,
+            message: "You voted for Blue. Blue was THE IMPOSTOR! Crew wins!"
+        }
+    }
+];
+
+// Room coordinates (center x, y for the SVG)
+const ROOM_COORDS = {
+    CAFETERIA:  { x: 70,  y: 30 },
+    WEAPONS:    { x: 140, y: 30 },
+    NAVIGATION: { x: 210, y: 30 },
+    MEDBAY:     { x: 70,  y: 80 },
+    ADMIN:      { x: 140, y: 80 },
+    O2:         { x: 210, y: 80 },
+    ELECTRICAL: { x: 70,  y: 130 },
+    STORAGE:    { x: 140, y: 130 },
+    REACTOR:    { x: 210, y: 130 },
+};
+
+const PLAYER_COLORS_HEX = {
+    Red: "#ff4444", Blue: "#4488ff", Green: "#44cc44",
+    Yellow: "#ffff44", Purple: "#cc44ff", Orange: "#ff8844",
+    White: "#ffffff"
+};
+
+let currentGame = 0;
+let currentStep = -1;
+let autoInterval = null;
+let revealed = false;
+
+function getGame() { return SAMPLE_GAMES[currentGame]; }
+
+function renderMap() {
+    const game = getGame();
+    const svg = document.getElementById('playersGroup');
+    svg.innerHTML = '';
+
+    // Highlight kill location
+    document.querySelectorAll('.room').forEach(r => r.classList.remove('kill-loc'));
+    const killRoom = document.getElementById('room-' + game.kill_location);
+    if (killRoom) killRoom.classList.add('kill-loc');
+
+    // Group players by actual location for offset
+    const locGroups = {};
+    game.players.forEach(p => {
+        const loc = p.location;
+        if (!locGroups[loc]) locGroups[loc] = [];
+        locGroups[loc].push(p);
+    });
+
+    game.players.forEach(p => {
+        const coord = ROOM_COORDS[p.location];
+        if (!coord) return;
+
+        const group = locGroups[p.location];
+        const idx = group.indexOf(p);
+        const offsetX = (idx - (group.length - 1) / 2) * 14;
+        const cx = coord.x + offsetX;
+        const cy = coord.y + (p.name === game.kill_victim ? 15 : 0);
+
+        const color = PLAYER_COLORS_HEX[p.name] || '#888';
+
+        // Dead players show as X
+        if (p.name === game.kill_victim) {
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', cx);
+            text.setAttribute('y', cy);
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('dominant-baseline', 'middle');
+            text.setAttribute('font-size', '12');
+            text.setAttribute('fill', '#555');
+            text.textContent = '✕';
+            svg.appendChild(text);
+        } else {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', cx);
+            circle.setAttribute('cy', cy);
+            circle.setAttribute('r', 7);
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#000');
+            circle.setAttribute('stroke-width', '1.5');
+            circle.classList.add('player-dot');
+            circle.setAttribute('data-player', p.name);
+            circle.setAttribute('data-role', p.role);
+            circle.setAttribute('data-location', p.location);
+
+            // Dim non-impostors if revealed
+            if (revealed && p.role !== 'impostor') {
+                circle.setAttribute('opacity', '0.5');
+            }
+            if (revealed && p.role === 'impostor') {
+                circle.setAttribute('stroke', '#ff0000');
+                circle.setAttribute('stroke-width', '2.5');
+            }
+
+            circle.addEventListener('mouseenter', (e) => showTooltip(e, p));
+            circle.addEventListener('mouseleave', hideTooltip);
+            svg.appendChild(circle);
+        }
+
+        // Label
+        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        label.setAttribute('x', cx);
+        label.setAttribute('y', cy + 10);
+        label.setAttribute('text-anchor', 'middle');
+        label.setAttribute('font-size', '6');
+        label.setAttribute('fill', p.name === game.kill_victim ? '#555' : color);
+        label.setAttribute('font-family', 'Courier New');
+        label.textContent = p.name;
+        svg.appendChild(label);
+    });
+
+    // Legend
+    const legend = document.getElementById('mapLegend');
+    legend.innerHTML = `<span style="color:#ff4444">&#9632;</span> Kill location: ${game.kill_location} &nbsp; | &nbsp; <span style="color:#555">✕</span> ${game.kill_victim} (victim) &nbsp; | &nbsp; Found by: ${game.body_found_by}`;
+}
+
+function renderStatements() {
+    const game = getGame();
+    const list = document.getElementById('statementList');
+    list.innerHTML = '';
+
+    game.players.forEach(p => {
+        const div = document.createElement('div');
+        const isVictim = p.name === game.kill_victim;
+        const isImpostor = game.impostor_names.includes(p.name);
+        div.className = 'statement-item ' + (isVictim ? 'victim' : (revealed && isImpostor ? 'impostor' : 'crew'));
+
+        const color = PLAYER_COLORS_HEX[p.name] || '#888';
+        let roleTag = '';
+        if (revealed) {
+            roleTag = isImpostor ? ' <span style="color:#ff4444">[IMPOSTOR]</span>' : (isVictim ? ' <span style="color:#888">[VICTIM]</span>' : ' <span style="color:#4488ff">[CREW]</span>');
+        }
+
+        div.innerHTML = `
+            <div class="player-name" style="color:${color}">${p.name}${roleTag}</div>
+            <div style="color:#aaa">${isVictim ? '<em>Eliminated - no statement</em>' : p.statement}</div>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function renderLog() {
+    const game = getGame();
+    const list = document.getElementById('logList');
+    list.innerHTML = '';
+
+    if (currentStep < 0) {
+        list.innerHTML = '<div style="color:#555; font-size:0.85em;">Agent hasn\'t taken any actions yet. Click "Next" to step through.</div>';
+        return;
+    }
+
+    const stepsToShow = game.agent_trajectory.slice(0, currentStep + 1);
+
+    stepsToShow.forEach((step, i) => {
+        const div = document.createElement('div');
+        if (step.action === 'vote') {
+            div.className = 'log-item vote';
+            div.innerHTML = `<span class="turn-badge">T${step.turn}</span><strong style="color:#ffaa44">VOTE: ${step.target}</strong> — <em style="color:#888">${step.reasoning}</em>`;
+        } else {
+            div.className = 'log-item tool';
+            const argsStr = Object.keys(step.args).length > 0 ? JSON.stringify(step.args) : '';
+            div.innerHTML = `<span class="turn-badge">T${step.turn}</span><strong style="color:#44aaff">${step.tool}</strong>(${argsStr})`;
+        }
+        list.appendChild(div);
+
+        // Show result if it's a tool call
+        if (step.action === 'tool_call' && step.result) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'log-item result';
+            const shortResult = step.result.length > 200 ? step.result.slice(0, 200) + '...' : step.result;
+            resultDiv.innerHTML = `<pre style="white-space:pre-wrap;font-size:0.85em;color:#aaa">${shortResult}</pre>`;
+            list.appendChild(resultDiv);
+        }
+    });
+
+    list.scrollTop = list.scrollHeight;
+}
+
+function renderVerdict() {
+    const game = getGame();
+    const panel = document.getElementById('verdictPanel');
+    const lastStep = currentStep >= 0 ? game.agent_trajectory[currentStep] : null;
+
+    // Show verdict only when vote step is shown
+    const hasVoted = game.agent_trajectory.slice(0, currentStep + 1).some(s => s.action === 'vote');
+
+    if (!hasVoted) {
+        panel.style.display = 'none';
+        return;
+    }
+
+    panel.style.display = 'block';
+    const r = game.result;
+
+    const verdictBox = document.getElementById('verdictBox');
+    verdictBox.innerHTML = `
+        <div class="verdict-box ${r.correct ? 'correct' : 'wrong'}">
+            ${r.correct ? '✓ IMPOSTOR CAUGHT! CREW WINS!' : '✗ WRONG VOTE! IMPOSTORS WIN!'}
+        </div>
+        <div style="color:#888; font-size:0.85em; margin-top:6px">${r.message}</div>
+    `;
+
+    const scoreGrid = document.getElementById('scoreGrid');
+    scoreGrid.innerHTML = `
+        <div class="score-item">
+            <div class="label">Total Reward</div>
+            <div class="value ${r.total_reward > 0 ? 'good' : 'bad'}">${r.total_reward.toFixed(2)}</div>
+        </div>
+        <div class="score-item">
+            <div class="label">Vote Score</div>
+            <div class="value ${r.vote_score > 0 ? 'good' : 'bad'}">${r.vote_score.toFixed(2)}</div>
+        </div>
+        <div class="score-item">
+            <div class="label">Investigation</div>
+            <div class="value good">${r.investigation_score.toFixed(2)}</div>
+        </div>
+        <div class="score-item">
+            <div class="label">Deception Resist</div>
+            <div class="value good">${r.deception_score.toFixed(2)}</div>
+        </div>
+    `;
+}
+
+function render() {
+    const game = getGame();
+    document.getElementById('gameInfo').textContent = `Game ID: ${game.game_id} | Kill: ${game.kill_location} | Victim: ${game.kill_victim} | Step: ${Math.max(0, currentStep + 1)} / ${game.agent_trajectory.length}`;
+    renderMap();
+    renderStatements();
+    renderLog();
+    renderVerdict();
+}
+
+function nextStep() {
+    const game = getGame();
+    if (currentStep < game.agent_trajectory.length - 1) {
+        currentStep++;
+        render();
+    }
+}
+
+function prevStep() {
+    if (currentStep > -1) {
+        currentStep--;
+        render();
+    }
+}
+
+function autoPlay() {
+    if (autoInterval) {
+        clearInterval(autoInterval);
+        autoInterval = null;
+        return;
+    }
+    autoInterval = setInterval(() => {
+        const game = getGame();
+        if (currentStep >= game.agent_trajectory.length - 1) {
+            clearInterval(autoInterval);
+            autoInterval = null;
+        } else {
+            nextStep();
+        }
+    }, 1500);
+}
+
+function loadNewGame() {
+    currentGame = (currentGame + 1) % SAMPLE_GAMES.length;
+    currentStep = -1;
+    revealed = false;
+    if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+    render();
+}
+
+function revealImpostors() {
+    revealed = !revealed;
+    render();
+}
+
+function showTooltip(e, player) {
+    const tooltip = document.getElementById('tooltip');
+    const color = PLAYER_COLORS_HEX[player.name] || '#888';
+    tooltip.innerHTML = `
+        <strong style="color:${color}">${player.name}</strong><br>
+        Location: ${player.location}<br>
+        Task: ${player.task || 'none'}<br>
+        Claimed: ${player.claimed_location}
+    `;
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 12) + 'px';
+    tooltip.style.top = (e.clientY - 10) + 'px';
+}
+
+function hideTooltip() {
+    document.getElementById('tooltip').style.display = 'none';
+}
+
+document.addEventListener('mousemove', (e) => {
+    const tooltip = document.getElementById('tooltip');
+    if (tooltip.style.display === 'block') {
+        tooltip.style.left = (e.clientX + 12) + 'px';
+        tooltip.style.top = (e.clientY - 10) + 'px';
+    }
+});
+
+// Init
+render();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "location_clash": [
+    "I was definitely in {fake_location} doing {fake_task}. {fake_saw_clause}. I'm sure of it.",
+    "I spent the whole round in {fake_location}. {fake_task}. {fake_saw_clause}. 100%.",
+    "I was in {fake_location} the entire time doing {fake_task}. {fake_saw_clause}. Check with anyone."
+  ],
+  "task_impossibility": [
+    "I was in {fake_location} doing {fake_task}. {fake_saw_clause}. Easy task, done fast.",
+    "I completed {fake_task} in {fake_location}. {fake_saw_clause}. Totally normal round.",
+    "Spent my time in {fake_location} on {fake_task}. {fake_saw_clause}. Nothing suspicious."
+  ],
+  "timing_contradiction": [
+    "I was in {fake_location} doing {fake_task}. I saw {fake_seen_player} there too. We were both working.",
+    "I completed {fake_task} in {fake_location}. {fake_seen_player} walked through, I saw them.",
+    "I was in {fake_location}. Saw {fake_seen_player} near {fake_location} area. Did {fake_task}."
+  ],
+  "kill_proximity": [
+    "I was all the way in {fake_location} doing {fake_task}. {fake_saw_clause}. Nowhere near the body.",
+    "I was in {fake_location} the whole time, {fake_task}. {fake_saw_clause}. Far from where it happened.",
+    "I completed {fake_task} in {fake_location}. {fake_saw_clause}. I was on the other side of the map."
+  ],
+  "corroboration_gap": [
+    "I was alone in {fake_location} doing {fake_task}. Nobody can confirm but I was there.",
+    "I spent the round solo in {fake_location}, {fake_task}. {fake_saw_clause}. I know how that sounds.",
+    "I was in {fake_location} doing {fake_task} by myself. {fake_saw_clause}. I'm telling the truth."
+  ],
+  "duo_cover": [
+    "I was with {ally_name} in {fake_location} the whole time. We did {fake_task} together.",
+    "Ask {ally_name} - we were both in {fake_location} doing {fake_task}. Neither of us left.",
+    "I can vouch for {ally_name} and they can vouch for me. {fake_location}. {fake_task}."
+  ]
+}

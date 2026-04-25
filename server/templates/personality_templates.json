@@ -1,0 +1,27 @@
+{
+  "nervous": {
+    "prefixes": ["Um,", "I think", "So,", "I mean,", "Well,"],
+    "hedges": ["I think", "maybe", "I guess", "probably", "I'm not sure but"],
+    "saw_clause_modifiers": ["I think I saw", "I maybe saw", "I might have seen"]
+  },
+  "confident": {
+    "prefixes": ["Definitely", "100%", "For sure,", "Clearly,", "Obviously,"],
+    "hedges": ["definitely", "absolutely", "100%", "for sure", "without a doubt"],
+    "saw_clause_modifiers": ["I definitely saw", "I clearly saw", "I can confirm I saw"]
+  },
+  "quiet": {
+    "prefixes": [],
+    "hedges": [],
+    "saw_clause_modifiers": ["Saw", "There was", "Also there:"]
+  },
+  "accusatory": {
+    "prefixes": ["Look,", "Honestly,", "Just saying,", "Not to be rude but,", "I hate to say it but"],
+    "hedges": ["honestly", "tbh", "not gonna lie"],
+    "saw_clause_modifiers": ["I saw", "I noticed", "I definitely saw"]
+  },
+  "detailed": {
+    "prefixes": ["So basically,", "Here's what happened:", "Let me explain:", "To be clear:"],
+    "hedges": ["specifically", "exactly", "precisely"],
+    "saw_clause_modifiers": ["I observed", "I can confirm I saw", "I specifically noticed"]
+  }
+}

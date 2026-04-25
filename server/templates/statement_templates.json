@@ -1,0 +1,37 @@
+{
+  "confident": [
+    "I was in {location} the whole time doing {task}. {saw_clause}. I'm 100% clean.",
+    "Definitely {location}. Did {task}. {saw_clause}. Can vouch for myself.",
+    "I went straight to {location} and completed {task}. {saw_clause}. Check the cameras.",
+    "I was in {location} doing {task}. {saw_clause}. I have nothing to hide.",
+    "Been in {location} since the start. {task}. {saw_clause}. Not sus at all."
+  ],
+  "nervous": [
+    "Um, I was in {location}? Yeah, {location}. Doing {task} I think. {saw_clause}.",
+    "I... think I was in {location}. {task}. Maybe. {saw_clause}. Sorry I'm nervous.",
+    "ok so I went to {location}... did {task}... {saw_clause}. That's it I think.",
+    "I was in {location} doing {task}. {saw_clause}. idk why everyone's looking at me",
+    "I mean I was probably in {location}? {task}. {saw_clause}. I lose track sometimes."
+  ],
+  "quiet": [
+    "{location}. {task}. {saw_clause}.",
+    "Was in {location}. {task}. {saw_clause}. That's all.",
+    "{location}. Done {task}. {saw_clause}.",
+    "Spent time in {location}. {task}. {saw_clause}.",
+    "{location} the whole time. {task}. {saw_clause}."
+  ],
+  "accusatory": [
+    "I was in {location} doing {task}. {saw_clause}. But honestly {random_player} was acting weird.",
+    "I was in {location}, {task}. {saw_clause}. Someone should ask {random_player} where they were.",
+    "I did {task} in {location}. {saw_clause}. Just saying {random_player} has been sus all game.",
+    "I was in {location} the whole time. {task}. {saw_clause}. {random_player} sus tho fr.",
+    "I completed {task} in {location}. {saw_clause}. Haven't seen {random_player} do any tasks."
+  ],
+  "detailed": [
+    "So I went to {location} right after the last meeting. Did {task}. {saw_clause}. Then I heard the alarm.",
+    "I made my way to {location} and spent the whole time doing {task}. {saw_clause}. I was there until the body was found.",
+    "Started at {location}, got {task} done. {saw_clause}. Literally the whole round was in {location}.",
+    "I was in {location} working on {task}. {saw_clause}. I didn't leave until the emergency.",
+    "Went straight to {location}, did {task} start to finish. {saw_clause}. I tracked my tasks."
+  ]
+}

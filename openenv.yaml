@@ -1,0 +1,18 @@
+spec_version: 1
+name: among_us_deception_gym
+type: space
+runtime: fastapi
+app: server.app:app
+port: 8000
+description: >
+  Train LLMs to detect deception by playing text-based Among Us.
+  Impostors lie confidently. The agent must investigate contradictions
+  and vote based on evidence, not confidence.
+tags:
+  - openenv
+  - among-us
+  - deception-detection
+  - multi-agent
+  - social-deduction
+  - sycophancy
+  - adaptive-difficulty
