@@ -8,6 +8,8 @@ from server.models import Action, DifficultyConfig, Observation, StepResult
 from server.environment import AmongUsEnv
 from server.environment_multi import MultiAgentAmongUsEnv
 
+
+
 app = FastAPI(title="Among Us Deception Gym", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
@@ -21,7 +23,12 @@ def root():
         "name": "Among Us Deception Gym",
         "version": "1.0.0",
         "status": "ok",
-        "endpoints": ["/health", "/reset", "/step", "/state", "/ws"]
+        "endpoints": [
+            "/health", "/reset", "/step", "/state", "/ws",
+            "/multi/reset", "/multi/discuss", "/multi/vote", "/multi/kill",
+            "/multi/observation/{game_id}/{player_name}",
+            "/multi/resolve/{game_id}", "/multi/session/{game_id}",
+        ]
     }
 
 
@@ -60,10 +67,15 @@ def training_game_info():
 
 
 @app.post("/multi/reset")
-def multi_reset(difficulty: Optional[DifficultyConfig] = None,
-                x_hf_token: Optional[str] = Header(default=None)):
+def multi_reset(
+    difficulty: Optional[DifficultyConfig] = None,
+    x_hf_token: Optional[str] = Header(default=None),
+    max_discussion_rounds: int = 2,
+):
     token = x_hf_token or os.environ.get("HF_TOKEN")
-    return multi_env.reset(difficulty=difficulty, hf_token=token)
+    return multi_env.reset(
+        difficulty=difficulty, hf_token=token, max_discussion_rounds=max_discussion_rounds
+    )
 
 
 @app.get("/multi/observation/{game_id}/{player_name}")
@@ -74,12 +86,44 @@ def multi_observation(game_id: str, player_name: str):
     return obs
 
 
+@app.post("/multi/discuss")
+def multi_discuss(
+    payload: dict,
+    x_hf_token: Optional[str] = Header(default=None),
+):
+    """
+    Submit a discussion statement for a player.
+    If 'statement' is omitted, the server generates one via LLM (requires HF token).
+
+    Payload: {game_id, player_name, statement (optional)}
+    """
+    game_id = payload.get("game_id", "")
+    player_name = payload.get("player_name", "")
+    statement = payload.get("statement", None)
+    token = x_hf_token or os.environ.get("HF_TOKEN")
+    return multi_env.submit_discussion(game_id, player_name, statement=statement, hf_token=token)
+
+
 @app.post("/multi/vote")
 def multi_vote(payload: dict):
     game_id = payload.get("game_id", "")
     player_name = payload.get("player_name", "")
     vote_target = payload.get("vote_target", "")
     return multi_env.submit_vote(game_id, player_name, vote_target)
+
+
+@app.post("/multi/kill")
+def multi_kill(payload: dict):
+    """
+    Impostor kills a crewmate to start the next round.
+    Call this after /multi/resolve returns awaiting_kill=true.
+
+    Payload: {game_id, impostor_name, kill_target (optional — auto-picked if omitted)}
+    """
+    game_id = payload.get("game_id", "")
+    impostor_name = payload.get("impostor_name", "")
+    kill_target = payload.get("kill_target", None)
+    return multi_env.kill(game_id, impostor_name, kill_target=kill_target)
 
 
 @app.get("/multi/resolve/{game_id}")

@@ -43,11 +43,7 @@ def generate_scenario(difficulty: DifficultyConfig, seed: Optional[int] = None) 
     game_id = str(uuid.uuid4())[:8]
 
     num_players = difficulty.player_count
-    num_impostors = difficulty.impostor_count
-
-    # Clamp impostor count
-    num_impostors = min(num_impostors, num_players - 2)
-    num_impostors = max(1, num_impostors)
+    num_impostors = 1  # Locked to single-impostor games
 
     colors = rng.sample(PLAYER_COLORS, min(num_players, len(PLAYER_COLORS)))
 
