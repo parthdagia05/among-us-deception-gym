@@ -265,14 +265,33 @@ def _render_voting_screen(rec: dict) -> str:
 
 def _render_tablet(rec: dict, idx: int, total: int, mode: str) -> str:
     """Wraps either chat or voting screen in the tablet frame."""
+    # Inline SVG icons — always render crisp regardless of OS emoji font
+    chat_icon_svg = (
+        "<svg viewBox='0 0 24 24' width='26' height='26' fill='#1a1a2e'>"
+        "<path d='M20 2H4C2.9 2 2 2.9 2 4v14c0 1.1 0.9 2 2 2h2v3.5c0 0.4 0.5 0.6 0.8 0.4L11 20h9c1.1 0 2-0.9 2-2V4c0-1.1-0.9-2-2-2z'/>"
+        "<circle cx='8' cy='11' r='1.4' fill='#ffffff'/>"
+        "<circle cx='12' cy='11' r='1.4' fill='#ffffff'/>"
+        "<circle cx='16' cy='11' r='1.4' fill='#ffffff'/>"
+        "</svg>"
+    )
+    vote_icon_svg = (
+        "<svg viewBox='0 0 24 24' width='26' height='26' fill='#1a1a2e'>"
+        "<path d='M3 5h18v3H3zM3 11h18v3H3zM3 17h18v3H3z' opacity='0.3'/>"
+        "<path d='M2 4l3 3 5-5' stroke='#1a1a2e' stroke-width='2.5' fill='none' "
+        "stroke-linecap='round' stroke-linejoin='round'/>"
+        "<rect x='9' y='5' width='13' height='3' rx='1' fill='#1a1a2e'/>"
+        "<rect x='9' y='11' width='13' height='3' rx='1' fill='#1a1a2e'/>"
+        "<rect x='9' y='17' width='13' height='3' rx='1' fill='#1a1a2e'/>"
+        "</svg>"
+    )
     if mode == "voting":
         body_html = _render_voting_screen(rec)
-        toggle_label = "💬"
-        toggle_title = "Switch to chat"
+        toggle_icon = chat_icon_svg
+        toggle_title = "Switch to chat view"
     else:
         body_html = _render_chat_screen(rec)
-        toggle_label = "🗳️"
-        toggle_title = "Switch to vote"
+        toggle_icon = vote_icon_svg
+        toggle_title = "Switch to vote view"
 
     return f"""
 <div style="max-width:880px;margin:0 auto;padding:0 4px;font-family:-apple-system,system-ui,sans-serif;">
@@ -302,15 +321,15 @@ def _render_tablet(rec: dict, idx: int, total: int, mode: str) -> str:
         </div>
         <div title="{toggle_title}"
              onclick="document.querySelector('#tablet-toggle-trigger button').click()"
-             style="width:44px;height:44px;background:#ffffff;border-radius:10px;
+             style="width:48px;height:48px;background:#ffffff;border-radius:12px;
                     display:flex;align-items:center;justify-content:center;
-                    font-size:1.4em;border:2px solid #5a6a7a;
-                    box-shadow:0 2px 4px rgba(0,0,0,0.1);
+                    border:2px solid #5a6a7a;
+                    box-shadow:0 2px 6px rgba(0,0,0,0.15);
                     cursor:pointer;user-select:none;
-                    transition:transform 0.1s, box-shadow 0.1s;"
-             onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
-             onmouseout="this.style.transform='';this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
-          {toggle_label}
+                    transition:transform 0.15s, box-shadow 0.15s, background 0.15s;"
+             onmouseover="this.style.transform='translateY(-1px) scale(1.05)';this.style.boxShadow='0 6px 14px rgba(0,0,0,0.2)';this.style.background='#f3f4f6';"
+             onmouseout="this.style.transform='';this.style.boxShadow='0 2px 6px rgba(0,0,0,0.15)';this.style.background='#ffffff';">
+          {toggle_icon}
         </div>
       </div>
 
