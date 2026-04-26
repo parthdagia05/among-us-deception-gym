@@ -10,145 +10,168 @@ pinned: false
 
 # Among Us Deception Detection RL Environment
 
-A reinforcement learning environment for training LLMs to detect deception in text-based social deduction games. Built following the OpenEnv spec.
+A multi-agent reinforcement learning environment for training LLMs to detect deception in social-deduction games. Built to the **OpenEnv spec**.
 
-## The Problem: Sycophancy Kills
+## 🔗 Links
 
-Language models have a well-documented failure mode: they trust confident-sounding statements. In an adversarial setting, a single assertive liar can manipulate a model's decision. This environment trains models to **investigate contradictions** rather than trust confidence.
+| | |
+|---|---|
+| Live game environment (HF Space) | https://huggingface.co/spaces/parthdagia/among-us-deception-gym |
+| Trained model (HF Hub) | https://huggingface.co/parthdagia/among-us-multiagent-detective |
+| Source code (GitHub) | https://github.com/parthdagia05/among-us-deception-gym |
 
-## Environment Overview
+## 🧠 The Problem: Sycophancy Kills
 
-- 9 map locations connected by an adjacency graph
-- 5-7 players per game (1-2 impostors)
-- Impostors generate lies with detectable contradictions
-- Agent uses investigation tools to find the impostor and vote
-- Adaptive curriculum scales difficulty as model improves
+Language models trust confident-sounding statements. In an adversarial setting, one assertive liar can manipulate the model's decision. This environment trains models to **investigate contradictions** rather than trust confidence.
 
-## Quick Start
+## 📊 Headline Result
 
-### Run the server
+After 1500 GRPO iterations on a single A10G, the trained model goes from **32.7% → 96.7% impostor-detection accuracy** and reduces sycophancy by **17×**.
+
+| Metric | **Trained** | Base (Qwen 2.5 1.5B) | Δ |
+|---|---|---|---|
+| Vote accuracy | **96.7 %** | 32.7 % | **+64.0 %** |
+| Sycophancy rate | **1.3 %** | 22.0 % | **−20.7 %** |
+| Crew win rate | **96.0 %** | 30.0 % | **+66.0 %** |
+| Malformed votes | 0.0 % | 0.0 % | — |
+
+*Eval: 50 unseen games × 3 crewmate votes = 150 votes per model.*
+
+## 🎮 Game Mechanics
+
+A real Among Us-style loop, in pure text:
+
+1. **Spawn**: 5 colored players with locations, tasks, personalities. 1 victim dies, 1 is the impostor (hard-locked to single impostor).
+2. **Initial statements**: Every alive player gives a 1-2 sentence alibi. Impostor's lie has at least one detectable contradiction.
+3. **Debate** (`/multi/discuss`): Each alive player speaks for **N rounds** — accusing, defending, deflecting. Impostor actively defends itself when accused.
+4. **Vote** (`/multi/vote`): Crewmates cast a vote based on initial statements + full debate transcript.
+5. **Resolve**: Majority ejects someone. Crew wins if impostor ejected.
+6. **Kill** (`/multi/kill`): If wrong ejection, impostor murders a crewmate. New body, new round.
+7. Repeat until **crew wins** (impostor ejected) or **impostors win** (parity reached: alive impostors ≥ alive crew).
+
+The trained model sees the full debate transcript and votes based on contradictions, not confidence.
+
+## 🌐 REST API (multi-agent endpoints)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/multi/reset` | Start a new game |
+| `GET`  | `/multi/observation/{game_id}/{player}` | Per-player view (no leak of impostor) |
+| `POST` | `/multi/discuss` | Submit a debate statement |
+| `POST` | `/multi/vote` | Crewmate votes |
+| `POST` | `/multi/kill` | Impostor kills (between rounds) |
+| `GET`  | `/multi/resolve/{game_id}` | Tally votes / win check |
+| `GET`  | `/multi/session/{game_id}` | Full game state + round history |
 
 ```bash
-pip install fastapi uvicorn pydantic
-uvicorn server.app:app --port 8000 --reload
+# Live demo against the deployed Space
+curl -X POST https://parthdagia-among-us-deception-gym.hf.space/multi/reset \
+  -H "Content-Type: application/json" \
+  -d '{"max_discussion_rounds": 2}'
 ```
 
-### Test the environment
+## 🏋️ Training
 
-```python
-from server.environment import AmongUsEnv
-from server.models import Action
-
-env = AmongUsEnv()
-obs = env.reset()
-print(f"Game {obs.game_id}: body found in {obs.body_found_location}")
-
-# Investigate
-result = env.step(Action(
-    action_type="tool_call",
-    tool_name="check_player_presence",
-    tool_args={"location": obs.body_found_location}
-))
-print(result.observation.last_tool_result)
-
-# Vote
-result = env.step(Action(action_type="vote", vote_target="Red"))
-print(f"Reward: {result.reward:.2f}, Correct: {result.info['correct']}")
-```
-
-### REST API
+GRPO training runs on **HuggingFace Jobs** with no local GPU needed. The script in [`jobs/train_job.py`](jobs/train_job.py) is a self-contained UV script.
 
 ```bash
-# Reset
-curl -X POST http://localhost:8000/reset
-
-# Tool call
-curl -X POST http://localhost:8000/step \
-  -H "Content-Type: application/json" \
-  -d '{"action_type":"tool_call","tool_name":"read_statements","tool_args":{}}'
-
-# Vote
-curl -X POST http://localhost:8000/step \
-  -H "Content-Type: application/json" \
-  -d '{"action_type":"vote","vote_target":"Red"}'
-
-# State
-curl http://localhost:8000/state
+# Submit training (a10g-large, ~4 hours, ~$5.65 of HF credits)
+hf jobs uv run \
+  --flavor a10g-large \
+  --secrets HF_TOKEN \
+  --env N_GAMES=500 \
+  --env N_STEPS=500 \
+  --env OUTPUT_HF=youruser/your-model \
+  jobs/train_job.py
 ```
 
-## Investigation Tools
+The script:
+1. Clones this repo into the container for in-process env imports
+2. Loads `Qwen/Qwen2.5-1.5B-Instruct` + LoRA (r=16)
+3. Builds dataset: 500 games × debate phase × ~3 crewmates = **1500 prompts**
+4. Runs 1500 GRPO iterations (8 rollouts per prompt)
+5. Merges LoRA into base, pushes merged model to HF Hub
 
-| Tool | Description | Args |
-|------|-------------|------|
-| `read_statements` | All player statements | none |
-| `check_player_presence` | Who was actually at a location | `{"location": "ELECTRICAL"}` |
-| `check_location_tasks` | Valid tasks at a location | `{"location": "CAFETERIA"}` |
-| `check_adjacency` | Are two locations connected? | `{"location1": "O2", "location2": "REACTOR"}` |
-| `cross_reference` | Auto-detect contradictions | none |
+## 🧪 Evaluation
 
-## Reward Structure
+```bash
+# Compare trained model against base on 50 fresh games
+hf jobs uv run \
+  --flavor t4-medium \
+  --secrets HF_TOKEN \
+  --env MODEL=youruser/your-model \
+  --env COMPARE=1 \
+  --env N_GAMES=50 \
+  jobs/eval_job.py
+```
 
-| Component | Weight | Description |
-|-----------|--------|-------------|
-| Vote accuracy | 60% | Did you vote for the impostor? |
-| Investigation quality | 25% | Did you use the right tools? |
-| Deception resistance | 15% | Did you investigate before voting? |
-| Anti-cheat | penalty | No tools before vote, repeated calls, timeout |
+Reports vote accuracy, sycophancy rate, malformed-output rate, and crew win rate for both trained and base.
 
-## Lie Types (by difficulty)
+## 🎯 Reward Structure
+
+Per-vote reward, computed deterministically from the scenario's ground truth:
+
+| Outcome | Reward |
+|---|---|
+| Voted the impostor | **+1.0** |
+| Voted the "confident innocent" (sycophancy trap) | **−0.8** |
+| Voted any other crewmate | **−0.5** |
+| Skipped or malformed | **−0.3 to −0.1** |
+| Vote includes substantive `REASONING:` (≥30 chars) | **+0.1 bonus** |
+
+No LLM-as-judge — every reward is mechanical.
+
+## 🎭 Lie Types (curriculum-scaled)
 
 | Difficulty | Lie Types |
-|------------|-----------|
-| 0.0-0.2 | location_clash, task_impossibility (obvious) |
+|---|---|
+| 0.0-0.2 | location_clash, task_impossibility |
 | 0.2-0.4 | + timing_contradiction |
 | 0.4-0.6 | + kill_proximity |
 | 0.6-0.8 | kill_proximity, corroboration_gap |
-| 0.8-1.0 | corroboration_gap, duo_cover (hardest) |
+| 0.8-1.0 | corroboration_gap, duo_cover |
 
-## Training with GRPO
+## 🏗️ Key Design Choices
 
-```bash
-# Start environment server
-uvicorn server.app:app --port 8000 &
+1. **Programmatic rewards only** — no LLM-as-judge. Vote correctness is ground truth.
+2. **Guaranteed contradictions** — every impostor lie has at least one provably wrong claim.
+3. **Sycophancy test** — one crewmate is always tagged "confident innocent" with an assertive personality. Voting for them = the model caved to confidence. We measure this rate explicitly.
+4. **Multi-round game loop** — impostor kills a crewmate after each wrong ejection. Game ends when impostor ejected (crew wins) or parity reached (impostors win).
+5. **Shared crewmate policy** — all 3 crewmates share one LoRA, just told "you are Red / Green / Yellow" in the prompt. One model, three roles.
+6. **LLM impostor** — uses HF Inference API (Qwen 2.5 1.5B) to generate natural-sounding lies + active debate defense. Falls back to scripted statements if no token.
+7. **Single-impostor lock** — `scenario_generator.py` forces `num_impostors=1` regardless of difficulty config, for consistent training signal.
 
-# Run GRPO training (requires unsloth, trl)
-python train.py
-
-# Evaluate
-python eval.py --n_games 100
-
-# Plot results
-python plot_results.py
-```
-
-## Project Structure
+## 🧱 Project Structure
 
 ```
-server/
-  app.py              - FastAPI server (OpenEnv spec)
-  environment.py      - AmongUsEnv class
-  models.py           - Pydantic v2 models
-  curriculum.py       - Adaptive difficulty curriculum
-  game/
-    map_data.py       - 9-room map with adjacency graph
-    player.py         - Player dataclass
-    lie_engine.py     - Impostor lie generation
-    statement_generator.py - NPC statement generation
-    scenario_generator.py  - Complete game scenario
-  tools/
-    investigation.py  - Tool execution engine
-  graders/
-    vote_grader.py    - Vote correctness + sycophancy detection
-    investigation_grader.py - Tool usage quality
-    deception_grader.py - Deception resistance
-    anti_cheat.py     - Abuse prevention
-  templates/
-    statement_templates.json
-    lie_templates.json
-    personality_templates.json
+.
+├── server/
+│   ├── app.py                # FastAPI server (OpenEnv spec, all endpoints)
+│   ├── environment_multi.py  # Multi-agent env: debate + vote + kill loop
+│   ├── environment.py        # Single-agent env (legacy)
+│   ├── curriculum.py         # Adaptive difficulty
+│   ├── models.py             # Pydantic models
+│   ├── game/
+│   │   ├── scenario_generator.py  # Game scenarios + lie injection
+│   │   ├── lie_engine.py          # 6 lie archetypes
+│   │   ├── statement_generator.py # NPC alibi statements
+│   │   ├── llm_impostor.py        # LLM-driven natural lies
+│   │   ├── llm_discussion.py      # LLM-driven debate (crew + impostor)
+│   │   ├── map_data.py            # 9-room adjacency graph
+│   │   └── player.py              # Player dataclass
+│   ├── graders/                   # Vote / investigation / deception graders
+│   └── tools/investigation.py     # 5 investigation tools
+├── jobs/
+│   ├── train_job.py          # GRPO training (HF Jobs UV script)
+│   ├── eval_job.py           # Trained vs base eval (HF Jobs UV script)
+│   └── README.md             # HF Jobs cost / submission docs
+├── train_multiagent.ipynb    # Equivalent training pipeline for Colab
+├── Dockerfile                # HF Spaces container
+├── openenv.yaml              # OpenEnv spec
+└── requirements.txt
 ```
 
-## OpenEnv Spec
+## 📦 OpenEnv Spec
 
 ```yaml
 spec_version: 1
@@ -156,29 +179,26 @@ name: among_us_deception_gym
 type: space
 runtime: fastapi
 app: server.app:app
-port: 8000
+port: 7860
 ```
 
-## Docker
+## 🐳 Run Locally
 
 ```bash
-docker build -t among-us-gym .
-docker run -p 8000:8000 among-us-gym
+pip install -r requirements.txt
+uvicorn server.app:app --port 8000
+# or
+docker build -t among-us-gym . && docker run -p 7860:7860 among-us-gym
 ```
 
-## Key Design Choices
+## 🔐 Environment Variables
 
-1. **Programmatic rewards only**: No LLM-as-judge. Vote correctness is deterministic.
-2. **Guaranteed contradictions**: Every game has at least one detectable lie.
-3. **Sycophancy test**: One crew member is always marked "confident innocent" to measure if the model caves to confidence.
-4. **Adaptive curriculum**: Difficulty scales along 5 axes based on rolling accuracy.
-5. **Personality variety**: 5 personality types for both crew and impostors to prevent pattern matching.
+Copy [`.env.example`](.env.example) to `.env` and fill in:
 
-## Results (Expected after training)
+```bash
+HF_TOKEN=hf_xxx   # write access + Manage Jobs scope
+```
 
-| Metric | Base | Trained |
-|--------|------|---------|
-| Vote Accuracy | ~25% | ~78% |
-| Sycophancy Rate | ~55% | ~8% |
-| Avg Tool Calls | 1.2 | 3.8 |
-| Avg Reward | -0.15 | +0.62 |
+## 📜 License
+
+MIT.
