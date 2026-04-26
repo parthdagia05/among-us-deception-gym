@@ -73,14 +73,13 @@ def generate_discussion_statement(
                 f"Your statement (no quotes, 1-2 sentences, name a specific player you suspect):"
             )
 
-        response = client.text_generation(
-            prompt,
-            model="Qwen/Qwen2.5-1.5B-Instruct",
-            max_new_tokens=80,
+        response = client.chat_completion(
+            messages=[{"role": "user", "content": prompt}],
+            model="Qwen/Qwen2.5-7B-Instruct",
+            max_tokens=80,
             temperature=0.85,
-            stop_sequences=["\n\n", "Human:", "User:"],
         )
-        result = response.strip().split("\n")[0].strip()
+        result = response.choices[0].message.content.strip().split("\n")[0].strip()
         if len(result) > 15:
             return result
         return fallback

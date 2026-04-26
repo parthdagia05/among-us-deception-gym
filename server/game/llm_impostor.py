@@ -40,14 +40,13 @@ Your alibi: you were in {fake_location.title()} doing {fake_task}.
 Tip: {hint}
 Respond ONLY with your alibi statement. Sound like a normal player, not guilty. No quotes."""
 
-        response = client.text_generation(
-            prompt,
-            model="Qwen/Qwen2.5-1.5B-Instruct",
-            max_new_tokens=80,
+        response = client.chat_completion(
+            messages=[{"role": "user", "content": prompt}],
+            model="Qwen/Qwen2.5-7B-Instruct",
+            max_tokens=80,
             temperature=0.8,
-            stop_sequences=["\n\n", "Human:", "User:"],
         )
-        result = response.strip().split("\n")[0].strip()
+        result = response.choices[0].message.content.strip().split("\n")[0].strip()
         if len(result) > 20:
             return result
         return scripted_statement
