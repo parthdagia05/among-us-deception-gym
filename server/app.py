@@ -23,7 +23,9 @@ def root():
         "name": "Among Us Deception Gym",
         "version": "1.0.0",
         "status": "ok",
+        "live_demo": "/demo",
         "endpoints": [
+            "/demo (Gradio UI)",
             "/health", "/reset", "/step", "/state", "/ws",
             "/multi/reset", "/multi/discuss", "/multi/vote", "/multi/kill",
             "/multi/observation/{game_id}/{player_name}",
@@ -137,6 +139,16 @@ def multi_session(game_id: str):
     if info is None:
         return {"error": f"Game {game_id} not found"}
     return info
+
+
+# Mount Gradio live demo at /demo (lazy import so failures don't break API)
+try:
+    import gradio as gr
+    from server.gradio_demo import demo as gradio_demo
+
+    app = gr.mount_gradio_app(app, gradio_demo, path="/demo")
+except Exception as exc:  # noqa: BLE001
+    print(f"[gradio] not mounted: {exc}")
 
 
 @app.websocket("/ws")

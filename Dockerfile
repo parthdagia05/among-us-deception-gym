@@ -7,7 +7,7 @@ ENV PATH="/home/user/.local/bin:$PATH"
 WORKDIR /app
 
 COPY --chown=user requirements.txt .
-RUN pip install --no-cache-dir fastapi "uvicorn[standard]" pydantic requests
+RUN pip install --no-cache-dir fastapi "uvicorn[standard]" pydantic requests gradio
 
 COPY --chown=user . /app
 

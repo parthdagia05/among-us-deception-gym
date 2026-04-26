@@ -1,0 +1,78 @@
+{
+  "trained": [
+    {
+      "model": "trained",
+      "game": 0,
+      "voter": "Purple",
+      "vote": "Blue",
+      "impostor": "Blue",
+      "correct": true,
+      "snippet": "ACTION: vote\nTARGET: Blue\nREASONING: Blue consistently denies being in O2 while other players claim they were there. Blue also questions White"
+    },
+    {
+      "model": "trained",
+      "game": 0,
+      "voter": "White",
+      "vote": "Blue",
+      "impostor": "Blue",
+      "correct": true,
+      "snippet": "ACTION: vote\nTARGET: Blue\nREASONING: Blue consistently defends their alibi while deflecting accusations against other players. They refuse to acknowledge any di"
+    },
+    {
+      "model": "trained",
+      "game": 0,
+      "voter": "Orange",
+      "vote": "Blue",
+      "impostor": "Blue",
+      "correct": true,
+      "snippet": "ACTION: vote\nTARGET: Blue\nREASONING: Blue consistently denies being in O2 and accuses others of lying about their whereabouts, which aligns with typical behavio"
+    },
+    {
+      "model": "trained",
+      "game": 1,
+      "voter": "Green",
+      "vote": "Purple",
+      "impostor": "Purple",
+      "correct": true,
+      "snippet": "ACTION: vote\nTARGET: Purple\nREASONING: Purple initially claimed to be in Navigation but later changed their story about being alone there. They also attacked Re"
+    }
+  ],
+  "base": [
+    {
+      "model": "base",
+      "game": 0,
+      "voter": "Blue",
+      "vote": "Red",
+      "impostor": "Purple",
+      "correct": false,
+      "snippet": "ACTION: vote\nTARGET: Red\nREASONING: Red consistently comes up as the suspect multiple times throughout the debate, including being mentioned more than any other"
+    },
+    {
+      "model": "base",
+      "game": 0,
+      "voter": "Green",
+      "vote": "Red",
+      "impostor": "Purple",
+      "correct": false,
+      "snippet": "ACTION: vote\nTARGET: Red\nREASONING: Red consistently comes up as suspect multiple times throughout the debate, including being mentioned more than any other pla"
+    },
+    {
+      "model": "base",
+      "game": 0,
+      "voter": "Red",
+      "vote": "Blue",
+      "impostor": "Purple",
+      "correct": false,
+      "snippet": "ACTION: vote\nTARGET: Blue\nREASONING: Blue"
+    },
+    {
+      "model": "base",
+      "game": 1,
+      "voter": "Blue",
+      "vote": "Purple",
+      "impostor": "Red",
+      "correct": false,
+      "snippet": "ACTION: vote\nTARGET: Purple\nREASONING: Purple consistently mentions being in Weapons and completing calibrate_targeting, which aligns with the statement"
+    }
+  ]
+}
