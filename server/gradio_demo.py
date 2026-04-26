@@ -143,14 +143,15 @@ def _render_chat_screen(rec: dict) -> str:
     alive = rec.get("alive_players", [])
 
     parts = [
-        # Body found banner
-        f"<div style='background:linear-gradient(135deg,#c1121f,#5a189a);"
-        f"color:white;padding:12px 16px;border-radius:10px;margin-bottom:12px;'>"
+        # Body found banner — solid color, no gradient
+        f"<div style='background:#c1121f;"
+        f"color:white;padding:14px 18px;border-radius:10px;margin-bottom:12px;"
+        f"border:1px solid #8b0e17;box-shadow:0 2px 6px rgba(193,18,31,0.18);'>"
         f"<div style='font-size:0.78em;letter-spacing:1px;font-weight:700;"
-        f"text-transform:uppercase;opacity:0.85;'>🚨 Body Reported</div>"
+        f"text-transform:uppercase;opacity:0.9;'>🚨 Body Reported</div>"
         f"<div style='font-size:1.08em;font-weight:700;margin-top:3px;'>"
         f"{rec['kill_victim']} found in {rec['kill_location']}</div>"
-        f"<div style='font-size:0.86em;opacity:0.92;margin-top:2px;'>"
+        f"<div style='font-size:0.86em;opacity:0.95;margin-top:2px;'>"
         f"Reported by <strong>{rec['body_found_by']}</strong></div>"
         f"</div>",
         _round_banner("📜 Initial Statements", "#1d4ed8"),
@@ -299,18 +300,17 @@ def _render_tablet(rec: dict, idx: int, total: int, mode: str) -> str:
                     letter-spacing:1.5px;">
           Who Is The Impostor?
         </div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <div style="background:rgba(255,255,255,0.7);font-size:0.78em;
-                      padding:4px 10px;border-radius:10px;color:#444;font-weight:700;">
-            Game {idx + 1}/{total}
-          </div>
-          <div title="{toggle_title}"
-               style="width:42px;height:42px;background:#ffffff;border-radius:10px;
-                      display:flex;align-items:center;justify-content:center;
-                      font-size:1.3em;border:2px solid #5a6a7a;
-                      box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-            {toggle_label}
-          </div>
+        <div title="{toggle_title}"
+             onclick="document.querySelector('#tablet-toggle-trigger button').click()"
+             style="width:44px;height:44px;background:#ffffff;border-radius:10px;
+                    display:flex;align-items:center;justify-content:center;
+                    font-size:1.4em;border:2px solid #5a6a7a;
+                    box-shadow:0 2px 4px rgba(0,0,0,0.1);
+                    cursor:pointer;user-select:none;
+                    transition:transform 0.1s, box-shadow 0.1s;"
+             onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
+             onmouseout="this.style.transform='';this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
+          {toggle_label}
         </div>
       </div>
 
@@ -373,44 +373,154 @@ CUSTOM_CSS = """
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif !important;
   max-width: 1100px !important;
 }
+
+/* ── Hero ────────────────────────────────────────────────── */
 .hero-banner {
-  background: linear-gradient(135deg, #c1121f 0%, #5a189a 100%);
-  color: white; padding: 22px 28px; border-radius: 14px;
-  margin-bottom: 14px;
-  box-shadow: 0 6px 20px rgba(90, 24, 154, 0.18);
+  background: #14141f;
+  color: #f5f5f7;
+  padding: 30px 34px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  border: 1px solid #2a2a3d;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
 }
-.hero-banner h1 { font-size: 1.85em; margin: 0; font-weight: 800; }
-.hero-banner .subtitle { font-size: 1.02em; opacity: 0.92; margin-top: 4px; max-width: 720px; }
+.hero-banner .hero-title {
+  font-size: 2.15em;
+  margin: 0;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  line-height: 1.15;
+}
+.hero-banner .subtitle {
+  font-size: 1.05em;
+  color: #c8cdd6;
+  margin-top: 10px;
+  max-width: 740px;
+  line-height: 1.55;
+}
 .stats-strip {
-  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;
-  font-size: 0.86em;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
 }
 .stat-pill {
-  background: rgba(255,255,255,0.18); padding: 4px 11px; border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.28);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 10px 14px;
+  border-radius: 12px;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 130px;
 }
-.stat-pill strong { font-size: 1.05em; }
-.link-row { margin-top: 12px; }
+.stat-pill .stat-label {
+  font-size: 0.72em;
+  color: #9aa0ac;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 600;
+}
+.stat-pill .stat-value {
+  font-size: 1.18em;
+  font-weight: 800;
+  color: #ffffff;
+}
+.stat-pill.trained .stat-value { color: #06d6a0; }
+.stat-pill.base    .stat-value { color: #ff6b6b; }
+.stat-pill.hard    .stat-value { color: #ffd166; }
+.stat-pill.syco    .stat-value { color: #8ab4ff; }
+.link-row {
+  margin-top: 18px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 .link-row a {
-  display: inline-block; background: rgba(255,255,255,0.22);
-  color: white !important; padding: 4px 12px; border-radius: 14px;
-  margin-right: 5px; text-decoration: none !important;
-  border: 1px solid rgba(255,255,255,0.3); font-size: 0.86em; font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff !important;
+  padding: 9px 16px;
+  border-radius: 10px;
+  text-decoration: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  font-size: 0.95em;
+  font-weight: 600;
+  transition: background 0.15s, border-color 0.15s;
 }
-.link-row a:hover { background: rgba(255,255,255,0.32); }
+.link-row a:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Nav buttons (replacing tabs) ────────────────────────── */
+.nav-row { gap: 8px !important; margin-bottom: 14px; }
+.nav-btn button {
+  background: #1f1f2e !important;
+  color: #c8cdd6 !important;
+  border: 1px solid #2e2e44 !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  font-size: 0.96em !important;
+  padding: 10px 14px !important;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  box-shadow: none !important;
+}
+.nav-btn button:hover {
+  background: #29293d !important;
+  color: #ffffff !important;
+}
+.nav-btn-active button {
+  background: #c1121f !important;
+  color: #ffffff !important;
+  border-color: #c1121f !important;
+}
+.nav-btn-active button:hover {
+  background: #d32030 !important;
+  color: #ffffff !important;
+}
+
+/* hidden trigger for tablet-header toggle icon */
+.hidden-trigger {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
 """
 
 HERO_HTML = """
 <div class="hero-banner">
-  <h1>🔪 Among Us Deception Detection</h1>
+  <h1 class="hero-title">🔪 Among Us Deception Detection</h1>
   <div class="subtitle">
-    Multi-agent RL environment. Trained Qwen 2.5 1.5B catches confident liars in social-deduction games.
+    Multi-agent RL environment. Trained Qwen 2.5 1.5B catches confident liars
+    in social-deduction games.
   </div>
   <div class="stats-strip">
-    <span class="stat-pill">🤖 Trained AI: <strong>96.7%</strong></span>
-    <span class="stat-pill">🧠 Base Qwen: <strong>32.7%</strong></span>
-    <span class="stat-pill">🎯 Hard-OOD: <strong>90.0%</strong></span>
-    <span class="stat-pill">😇 Sycophancy: <strong>22% → 1.3%</strong> (17×)</span>
+    <span class="stat-pill trained">
+      <span class="stat-label">🤖 Trained AI</span>
+      <span class="stat-value">96.7%</span>
+    </span>
+    <span class="stat-pill base">
+      <span class="stat-label">🧠 Base Qwen</span>
+      <span class="stat-value">32.7%</span>
+    </span>
+    <span class="stat-pill hard">
+      <span class="stat-label">🎯 Hard-OOD</span>
+      <span class="stat-value">90.0%</span>
+    </span>
+    <span class="stat-pill syco">
+      <span class="stat-label">😇 Sycophancy</span>
+      <span class="stat-value">22% → 1.3%<span style="font-size:0.7em;opacity:0.75;font-weight:600;"> (17×)</span></span>
+    </span>
   </div>
   <div class="link-row">
     <a href="https://github.com/parthdagia05/among-us-deception-gym" target="_blank">📦 GitHub</a>
@@ -419,6 +529,10 @@ HERO_HTML = """
   </div>
 </div>
 """
+
+
+def _nav_classes(is_active: bool) -> list[str]:
+    return ["nav-btn", "nav-btn-active"] if is_active else ["nav-btn"]
 
 
 def build_demo() -> gr.Blocks:
@@ -432,12 +546,33 @@ def build_demo() -> gr.Blocks:
         idx_state = gr.State(0)
         mode_state = gr.State("chat")
 
-        with gr.Tab("🎬 Watch the AI play"):
+        # ── Nav buttons (replacing tabs) ───────────────────────────────
+        with gr.Row(elem_classes=["nav-row"]):
+            nav_watch = gr.Button(
+                "🎬 Watch the AI play", elem_classes=_nav_classes(True),
+            )
+            nav_results = gr.Button(
+                "📊 Training Results", elem_classes=_nav_classes(False),
+            )
+            nav_safeguards = gr.Button(
+                "🛡️ Safeguards", elem_classes=_nav_classes(False),
+            )
+            nav_api = gr.Button(
+                "🔌 API & Code", elem_classes=_nav_classes(False),
+            )
+
+        # ── Section: Watch the AI play ─────────────────────────────────
+        with gr.Group(visible=True) as section_watch:
             tablet_view = gr.HTML(initial_view())
 
-            with gr.Row():
-                toggle_btn = gr.Button("🔄 Toggle Chat / Vote view", variant="secondary", size="lg")
-                next_btn = gr.Button("▶️ Watch another game", variant="primary", size="lg")
+            # Hidden trigger fired by the chat/vote icon inside the tablet header.
+            toggle_btn = gr.Button(
+                "toggle", elem_id="tablet-toggle-trigger",
+                elem_classes=["hidden-trigger"],
+            )
+            next_btn = gr.Button(
+                "▶️ Watch another game", variant="primary", size="lg",
+            )
 
             toggle_btn.click(
                 toggle_view,
@@ -462,8 +597,8 @@ def build_demo() -> gr.Blocks:
                       on the right show *which AI crewmates voted for that player*. The ejected
                       player gets a red ✖ over their avatar.
 
-                    Click **🔄 Toggle Chat / Vote** to switch between screens. Click
-                    **▶️ Watch another game** to load the next of 20 recorded games.
+                    Tap the **chat / vote icon in the tablet's top-right** to switch screens.
+                    Click **▶️ Watch another game** to load the next of 20 recorded games.
 
                     Every word of reasoning behind each vote was generated by the trained
                     Qwen 2.5 1.5B + LoRA model on a fresh game. We pre-recorded these so the
@@ -471,7 +606,8 @@ def build_demo() -> gr.Blocks:
                     """
                 )
 
-        with gr.Tab("📊 Training Results"):
+        # ── Section: Training Results ──────────────────────────────────
+        with gr.Group(visible=False) as section_results:
             with gr.Row():
                 with gr.Column():
                     gr.Markdown("### 🎯 Trained vs Base — 50-game Eval")
@@ -501,7 +637,8 @@ def build_demo() -> gr.Blocks:
                 'style="width:100%;max-width:600px;border-radius:8px;">'
             )
 
-        with gr.Tab("🛡️ Safeguards"):
+        # ── Section: Safeguards ────────────────────────────────────────
+        with gr.Group(visible=False) as section_safeguards:
             gr.Markdown(
                 """
                 ## 8 layered defences against reward hacking
@@ -538,7 +675,8 @@ def build_demo() -> gr.Blocks:
                         """
                     )
 
-        with gr.Tab("🔌 API & Code"):
+        # ── Section: API & Code ────────────────────────────────────────
+        with gr.Group(visible=False) as section_api:
             gr.Markdown(
                 """
                 ### REST endpoints (OpenEnv-compliant)
@@ -557,6 +695,29 @@ def build_demo() -> gr.Blocks:
                 **Repo:** [github.com/parthdagia05/among-us-deception-gym](https://github.com/parthdagia05/among-us-deception-gym)
                 """
             )
+
+        # ── Nav routing ────────────────────────────────────────────────
+        nav_outputs = [
+            section_watch, section_results, section_safeguards, section_api,
+            nav_watch, nav_results, nav_safeguards, nav_api,
+        ]
+
+        def _show(active: str):
+            return (
+                gr.update(visible=active == "watch"),
+                gr.update(visible=active == "results"),
+                gr.update(visible=active == "safeguards"),
+                gr.update(visible=active == "api"),
+                gr.update(elem_classes=_nav_classes(active == "watch")),
+                gr.update(elem_classes=_nav_classes(active == "results")),
+                gr.update(elem_classes=_nav_classes(active == "safeguards")),
+                gr.update(elem_classes=_nav_classes(active == "api")),
+            )
+
+        nav_watch.click(lambda: _show("watch"), outputs=nav_outputs)
+        nav_results.click(lambda: _show("results"), outputs=nav_outputs)
+        nav_safeguards.click(lambda: _show("safeguards"), outputs=nav_outputs)
+        nav_api.click(lambda: _show("api"), outputs=nav_outputs)
 
     return demo
 
