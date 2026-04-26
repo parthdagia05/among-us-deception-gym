@@ -12,3 +12,6 @@ venv/
 *.log
 .DS_Store
 
+# Internal-only writeups
+blog/video_script.md
+

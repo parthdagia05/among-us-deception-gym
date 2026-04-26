@@ -20,7 +20,6 @@ A multi-agent reinforcement learning environment for training LLMs to detect dec
 | Trained model (HF Hub) | https://huggingface.co/parthdagia/among-us-multiagent-detective |
 | Source code (GitHub) | https://github.com/parthdagia05/among-us-deception-gym |
 | 📝 **Blog writeup** | [`blog/writeup.md`](blog/writeup.md) |
-| 🎬 **Video script** | [`blog/video_script.md`](blog/video_script.md) |
 
 ## 🧠 The Problem: Sycophancy Kills
 
