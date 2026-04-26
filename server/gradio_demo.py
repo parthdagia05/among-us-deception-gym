@@ -514,6 +514,160 @@ CUSTOM_CSS = """
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
+/* ── Polish pass: animations, transitions, hover states ──── */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-cyan {
+  0%, 100% { box-shadow: 0 0 25px rgba(103, 232, 249, 0.18),
+                         0 4px 14px rgba(0, 0, 0, 0.35),
+                         inset 0 1px 0 rgba(255, 255, 255, 0.07); }
+  50%      { box-shadow: 0 0 40px rgba(103, 232, 249, 0.35),
+                         0 4px 14px rgba(0, 0, 0, 0.4),
+                         inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+}
+
+/* Hero entrance animation */
+.hero-banner {
+  animation: fadeIn 0.6s ease-out;
+}
+
+/* Stat pills — staggered entrance + hover lift */
+.stat-pill {
+  animation: fadeIn 0.5s ease-out backwards;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  cursor: default;
+}
+.stat-pill:nth-child(1) { animation-delay: 0.05s; }
+.stat-pill:nth-child(2) { animation-delay: 0.12s; }
+.stat-pill:nth-child(3) { animation-delay: 0.19s; }
+.stat-pill:nth-child(4) { animation-delay: 0.26s; }
+.stat-pill:hover {
+  transform: translateY(-2px) scale(1.02);
+  background: rgba(103, 232, 249, 0.06) !important;
+  border-color: rgba(103, 232, 249, 0.3) !important;
+}
+
+/* Hero link buttons — lift on hover */
+.link-row a {
+  transition: transform 0.15s, background 0.15s, border-color 0.15s !important;
+}
+.link-row a:hover { transform: translateY(-1px); }
+
+/* Nav buttons — animated cyan underline on hover */
+.nav-btn button {
+  position: relative;
+  overflow: hidden;
+}
+.nav-btn button::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: #67e8f9;
+  transition: width 0.3s ease, left 0.3s ease;
+}
+.nav-btn button:hover::after { width: 80%; left: 10%; }
+.nav-btn-active button::after { display: none; }
+
+/* Primary button — gentle breathing glow when idle, instant on hover */
+.gradio-container .primary button.lg,
+.gradio-container button.lg.primary {
+  animation: pulse-cyan 3.5s ease-in-out infinite;
+}
+.gradio-container .primary button.lg:hover,
+.gradio-container button.lg.primary:hover { animation: none !important; }
+
+/* Section group entrance */
+.gradio-container .gr-group { animation: fadeIn 0.45s ease-out backwards; }
+
+/* Plot images — frame and lift on dark theme */
+.gradio-container .prose img,
+.gradio-container img[src*="raw.githubusercontent"] {
+  border: 1px solid rgba(103, 232, 249, 0.12);
+  background: #0e1424;
+  padding: 4px;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
+              0 0 0 1px rgba(103, 232, 249, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.gradio-container .prose img:hover,
+.gradio-container img[src*="raw.githubusercontent"]:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5),
+              0 0 0 1px rgba(103, 232, 249, 0.18),
+              0 0 24px rgba(103, 232, 249, 0.12);
+}
+
+/* Numbered ordered lists (safeguards) — turn each into a card */
+.gradio-container .prose ol {
+  counter-reset: sg;
+  list-style: none;
+  padding-left: 0;
+}
+.gradio-container .prose ol > li {
+  counter-increment: sg;
+  position: relative;
+  padding: 14px 16px 14px 56px;
+  margin: 8px 0;
+  background: linear-gradient(135deg, rgba(20, 20, 31, 0.6), rgba(26, 26, 46, 0.45));
+  border: 1px solid rgba(103, 232, 249, 0.14);
+  border-radius: 10px;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+  list-style: none;
+}
+.gradio-container .prose ol > li:hover {
+  border-color: rgba(103, 232, 249, 0.4);
+  transform: translateX(3px);
+}
+.gradio-container .prose ol > li::before {
+  content: counter(sg);
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, #c1121f, #5a189a);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 0.88em;
+  box-shadow: 0 2px 8px rgba(193, 18, 31, 0.4);
+}
+
+/* Cleaner cyan scrollbar */
+.gradio-container *::-webkit-scrollbar { width: 8px; height: 8px; }
+.gradio-container *::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 4px; }
+.gradio-container *::-webkit-scrollbar-thumb { background: rgba(103, 232, 249, 0.25); border-radius: 4px; }
+.gradio-container *::-webkit-scrollbar-thumb:hover { background: rgba(103, 232, 249, 0.45); }
+
+/* Section heading spacing */
+.gradio-container h3 {
+  margin-top: 18px !important;
+  margin-bottom: 10px !important;
+  letter-spacing: -0.2px;
+}
+
+/* Mobile fallback */
+@media (max-width: 720px) {
+  .stat-pill { min-width: calc(50% - 5px); }
+  .gradio-container button.lg {
+    padding: 14px 18px !important;
+    min-height: 56px !important;
+    font-size: 0.92em !important;
+  }
+  .hero-banner { padding: 22px 18px !important; }
+  .hero-banner .hero-title { font-size: 1.6em !important; }
+}
 """
 
 HERO_HTML = """
