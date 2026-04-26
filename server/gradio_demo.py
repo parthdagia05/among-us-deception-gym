@@ -616,6 +616,16 @@ CUSTOM_CSS = """
 /* ── Section accent colors (per-tab tint) ───────────────── */
 .gradio-container > div[id^="component-"]:has(.gr-group) { transition: background 0.4s ease; }
 
+/* Hide Gradio's default footer (Use via API · Built with Gradio · Settings)
+   so judges only see our custom footer. */
+.gradio-container > footer,
+.gradio-container .footer,
+.gradio-container .footer-toolbar,
+footer:has(button[aria-label="Settings"]),
+footer:has(a[href*="gradio.app"]) {
+  display: none !important;
+}
+
 /* hidden trigger for tablet-header toggle icon */
 .hidden-trigger {
   position: absolute !important;
@@ -781,77 +791,154 @@ CUSTOM_CSS = """
 }
 """
 
+HEADER_HTML = """
+<div style="display:flex;justify-content:space-between;align-items:center;
+            padding:14px 24px;
+            background:linear-gradient(90deg,#0d1421 0%,#1a1530 50%,#0d1421 100%);
+            border-bottom:1px solid rgba(103,232,249,0.18);
+            margin:-16px -16px 18px;
+            box-shadow:0 4px 18px rgba(0,0,0,0.35);">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <span style="font-size:1.5em;">🔪</span>
+    <span style="font-weight:800;font-size:1.1em;color:#ffffff;letter-spacing:-0.2px;">
+      Among Us Deception Gym
+    </span>
+    <span style="font-size:0.66em;letter-spacing:1.5px;font-weight:700;color:#67e8f9;
+                 background:rgba(103,232,249,0.12);padding:3px 10px;border-radius:12px;
+                 border:1px solid rgba(103,232,249,0.3);">RL ENV · OPENENV</span>
+  </div>
+  <span style="font-size:0.82em;color:#b8c2d8;letter-spacing:0.3px;">
+    Meta OpenEnv Hackathon · April 2026
+  </span>
+</div>
+"""
+
+
 HERO_HTML = """
-<div class="hero-banner">
-  <h1 class="hero-title">🔪 Among Us Deception Detection</h1>
-  <div class="subtitle">
+<div style="background:linear-gradient(135deg,#14141f 0%,#1a1530 50%,#1f0d1a 100%);
+            color:#f5f5f7;padding:30px 34px;border-radius:16px;margin-bottom:18px;
+            border:1px solid rgba(103,232,249,0.18);
+            box-shadow:0 12px 32px rgba(0,0,0,0.35),
+                       0 0 60px rgba(103,232,249,0.06) inset;">
+  <h1 style="font-size:2em;margin:0 0 6px;font-weight:900;letter-spacing:-0.5px;
+             color:#ffffff;display:flex;align-items:center;gap:12px;line-height:1.15;">
+    🔪 Among Us Deception Detection
+  </h1>
+  <div style="font-size:1.05em;color:#c8cdd6;margin-top:6px;max-width:740px;line-height:1.55;">
     Multi-agent RL environment. Trained Qwen 2.5 1.5B catches confident liars
     in social-deduction games.
   </div>
-  <div class="stats-strip">
-    <span class="stat-pill trained">
-      <span class="stat-label">🤖 Trained AI</span>
-      <span class="stat-value">96.7%</span>
-    </span>
-    <span class="stat-pill base">
-      <span class="stat-label">🧠 Base Qwen</span>
-      <span class="stat-value">32.7%</span>
-    </span>
-    <span class="stat-pill hard">
-      <span class="stat-label">🎯 Hard-OOD</span>
-      <span class="stat-value">90.0%</span>
-    </span>
-    <span class="stat-pill syco">
-      <span class="stat-label">😇 Sycophancy</span>
-      <span class="stat-value">22% → 1.3%<span style="font-size:0.7em;opacity:0.75;font-weight:600;"> (17×)</span></span>
-    </span>
+
+  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;">
+    <div style="background:rgba(6,214,160,0.12);border:1px solid rgba(6,214,160,0.4);
+                padding:10px 16px;border-radius:12px;display:flex;flex-direction:column;
+                gap:2px;min-width:130px;">
+      <span style="font-size:0.7em;color:#9aa0ac;text-transform:uppercase;
+                   letter-spacing:0.6px;font-weight:600;">🤖 Trained AI</span>
+      <span style="font-size:1.2em;font-weight:800;color:#06d6a0;">96.7%</span>
+    </div>
+    <div style="background:rgba(255,107,107,0.12);border:1px solid rgba(255,107,107,0.4);
+                padding:10px 16px;border-radius:12px;display:flex;flex-direction:column;
+                gap:2px;min-width:130px;">
+      <span style="font-size:0.7em;color:#9aa0ac;text-transform:uppercase;
+                   letter-spacing:0.6px;font-weight:600;">🧠 Base Qwen</span>
+      <span style="font-size:1.2em;font-weight:800;color:#ff6b6b;">32.7%</span>
+    </div>
+    <div style="background:rgba(255,209,102,0.12);border:1px solid rgba(255,209,102,0.4);
+                padding:10px 16px;border-radius:12px;display:flex;flex-direction:column;
+                gap:2px;min-width:130px;">
+      <span style="font-size:0.7em;color:#9aa0ac;text-transform:uppercase;
+                   letter-spacing:0.6px;font-weight:600;">🎯 Hard-OOD</span>
+      <span style="font-size:1.2em;font-weight:800;color:#ffd166;">90.0%</span>
+    </div>
+    <div style="background:rgba(138,180,255,0.12);border:1px solid rgba(138,180,255,0.4);
+                padding:10px 16px;border-radius:12px;display:flex;flex-direction:column;
+                gap:2px;min-width:130px;">
+      <span style="font-size:0.7em;color:#9aa0ac;text-transform:uppercase;
+                   letter-spacing:0.6px;font-weight:600;">😇 Sycophancy</span>
+      <span style="font-size:1.2em;font-weight:800;color:#8ab4ff;">
+        22% → 1.3%<span style="font-size:0.7em;opacity:0.75;font-weight:600;"> (17×)</span>
+      </span>
+    </div>
   </div>
-  <div class="link-row">
-    <a href="https://github.com/parthdagia05/among-us-deception-gym" target="_blank">📦 GitHub</a>
-    <a href="https://huggingface.co/parthdagia/among-us-multiagent-detective" target="_blank">🤖 Trained Model</a>
-    <a href="https://github.com/parthdagia05/among-us-deception-gym/blob/main/blog/writeup.md" target="_blank">📝 Blog</a>
+
+  <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;">
+    <a href="https://github.com/parthdagia05/among-us-deception-gym" target="_blank"
+       style="display:inline-flex;align-items:center;gap:6px;
+              background:rgba(255,255,255,0.08);color:#ffffff;padding:9px 16px;
+              border-radius:10px;text-decoration:none;border:1px solid rgba(255,255,255,0.16);
+              font-size:0.92em;font-weight:600;transition:background 0.15s,border-color 0.15s;"
+       onmouseover="this.style.background='rgba(255,255,255,0.16)';this.style.borderColor='rgba(255,255,255,0.3)';"
+       onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='rgba(255,255,255,0.16)';">
+      📦 GitHub
+    </a>
+    <a href="https://huggingface.co/parthdagia/among-us-multiagent-detective" target="_blank"
+       style="display:inline-flex;align-items:center;gap:6px;
+              background:rgba(255,255,255,0.08);color:#ffffff;padding:9px 16px;
+              border-radius:10px;text-decoration:none;border:1px solid rgba(255,255,255,0.16);
+              font-size:0.92em;font-weight:600;transition:background 0.15s,border-color 0.15s;"
+       onmouseover="this.style.background='rgba(255,255,255,0.16)';this.style.borderColor='rgba(255,255,255,0.3)';"
+       onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='rgba(255,255,255,0.16)';">
+      🤖 Trained Model
+    </a>
+    <a href="https://github.com/parthdagia05/among-us-deception-gym/blob/main/blog/writeup.md" target="_blank"
+       style="display:inline-flex;align-items:center;gap:6px;
+              background:rgba(255,255,255,0.08);color:#ffffff;padding:9px 16px;
+              border-radius:10px;text-decoration:none;border:1px solid rgba(255,255,255,0.16);
+              font-size:0.92em;font-weight:600;transition:background 0.15s,border-color 0.15s;"
+       onmouseover="this.style.background='rgba(255,255,255,0.16)';this.style.borderColor='rgba(255,255,255,0.3)';"
+       onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='rgba(255,255,255,0.16)';">
+      📝 Blog
+    </a>
   </div>
 </div>
 """
 
 
-HEADER_HTML = """
-<div class="app-header">
-  <div class="app-header-left">
-    <span class="app-logo">🔪</span>
-    <span class="app-brand">Among Us Deception Gym</span>
-    <span class="app-tag">RL ENVIRONMENT · OPENENV</span>
-  </div>
-  <div class="app-header-right">
-    <span class="app-event">Meta OpenEnv Hackathon · April 2026</span>
-  </div>
-</div>
-"""
+def _foot_pill(text: str, color: str, glow: str) -> str:
+    return (
+        f"<span style='display:inline-block;padding:5px 13px;border-radius:14px;"
+        f"font-size:0.78em;font-weight:700;letter-spacing:0.4px;color:{color};"
+        f"background:{glow};border:1px solid {color}55;'>{text}</span>"
+    )
 
 
 FOOTER_HTML = """
-<div class="app-footer">
-  <div class="app-footer-row">
-    <div class="app-footer-brand">
-      <span class="app-logo">🔪</span>
-      <strong>Among Us Deception Gym</strong>
+<div style="margin:32px -16px -16px;padding:24px 24px 18px;
+            background:linear-gradient(180deg,#0a0e1a 0%,#060914 100%);
+            border-top:1px solid rgba(103,232,249,0.18);color:#b8c2d8;">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;
+              flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+    <div style="display:flex;align-items:center;gap:8px;color:#ffffff;font-size:1em;font-weight:700;">
+      🔪 Among Us Deception Gym
     </div>
-    <div class="app-footer-links">
-      <a href="https://github.com/parthdagia05/among-us-deception-gym" target="_blank">GitHub</a>
-      <a href="https://huggingface.co/spaces/parthdagia/among-us-deception-gym" target="_blank">HF Space</a>
-      <a href="https://huggingface.co/parthdagia/among-us-multiagent-detective" target="_blank">Model</a>
-      <a href="https://github.com/parthdagia05/among-us-deception-gym/blob/main/blog/writeup.md" target="_blank">Blog</a>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;">
+      <a href="https://github.com/parthdagia05/among-us-deception-gym" target="_blank"
+         style="color:#67e8f9;text-decoration:none;font-weight:600;font-size:0.92em;">GitHub</a>
+      <a href="https://huggingface.co/spaces/parthdagia/among-us-deception-gym" target="_blank"
+         style="color:#67e8f9;text-decoration:none;font-weight:600;font-size:0.92em;">HF Space</a>
+      <a href="https://huggingface.co/parthdagia/among-us-multiagent-detective" target="_blank"
+         style="color:#67e8f9;text-decoration:none;font-weight:600;font-size:0.92em;">Model</a>
+      <a href="https://github.com/parthdagia05/among-us-deception-gym/blob/main/blog/writeup.md" target="_blank"
+         style="color:#67e8f9;text-decoration:none;font-weight:600;font-size:0.92em;">Blog</a>
     </div>
   </div>
-  <div class="app-footer-stack">
-    <span class="footer-pill cyan">Qwen 2.5 1.5B + LoRA</span>
-    <span class="footer-pill purple">GRPO via TRL</span>
-    <span class="footer-pill red">HF Jobs · A10G</span>
-    <span class="footer-pill green">FastAPI · OpenEnv spec</span>
-    <span class="footer-pill amber">Gradio</span>
+
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;justify-content:center;">
+""" + _foot_pill("Qwen 2.5 1.5B + LoRA", "#67e8f9", "rgba(103,232,249,0.10)") + """
+""" + _foot_pill("GRPO via TRL",         "#c084fc", "rgba(192,132,252,0.10)") + """
+""" + _foot_pill("HF Jobs · A10G",       "#ff8a90", "rgba(255,138,144,0.10)") + """
+""" + _foot_pill("FastAPI · OpenEnv",    "#6ee7b7", "rgba(110,231,183,0.10)") + """
+""" + _foot_pill("Gradio",               "#fcd34d", "rgba(252,211,77,0.10)") + """
   </div>
-  <div class="app-footer-credit">
-    Built by <a href="https://github.com/parthdagia05" target="_blank">parthdagia05</a> for the Meta OpenEnv Hackathon ·
+
+  <div style="text-align:center;font-size:0.86em;color:#6b7686;margin-top:12px;
+              padding-top:14px;border-top:1px solid rgba(255,255,255,0.05);">
+    Built by
+    <a href="https://github.com/parthdagia05" target="_blank"
+       style="color:#a8b3c8;text-decoration:none;font-weight:600;">parthdagia05</a>
+    for the Meta OpenEnv Hackathon ·
     96.7% accuracy · 1.3% sycophancy · 17× resistance to confident liars
   </div>
 </div>
