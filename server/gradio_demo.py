@@ -274,8 +274,16 @@ def _render_tablet(rec: dict, idx: int, total: int, mode: str) -> str:
     # Clicking the inactive tab fires the hidden Gradio button to swap mode.
     chat_active = mode == "chat"
     vote_active = mode == "voting"
-    chat_click = "" if chat_active else "document.querySelector('#tablet-toggle-trigger button').click()"
-    vote_click = "" if vote_active else "document.querySelector('#tablet-toggle-trigger button').click()"
+    # Robust JS: search button inside #tablet-toggle-trigger, then fall back
+    # to clicking the wrapper itself, then to any button with the "toggle" text.
+    fire_toggle = (
+        "var t=document.querySelector('#tablet-toggle-trigger button')"
+        "||document.querySelector('#tablet-toggle-trigger')"
+        "||Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='toggle');"
+        "if(t){t.click();}"
+    )
+    chat_click = "" if chat_active else fire_toggle
+    vote_click = "" if vote_active else fire_toggle
 
     def tab(label, icon, is_active, onclick):
         active_bg = "linear-gradient(135deg,#c1121f,#5a189a)" if is_active else "transparent"
@@ -626,14 +634,25 @@ footer:has(a[href*="gradio.app"]) {
   display: none !important;
 }
 
-/* hidden trigger for tablet-header toggle icon */
-.hidden-trigger {
+/* Hidden trigger button — fully off-screen but still .click()-able from JS.
+   Using absolute positioning at -9999px (the standard a11y pattern). Apply
+   to BOTH the gr.Button wrapper (.hidden-trigger) and any nested element. */
+.hidden-trigger,
+.hidden-trigger *,
+#tablet-toggle-trigger,
+#tablet-toggle-trigger * {
   position: absolute !important;
+  left: -9999px !important;
+  top: -9999px !important;
   width: 1px !important;
   height: 1px !important;
-  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
   opacity: 0 !important;
-  pointer-events: none !important;
+  overflow: hidden !important;
 }
 
 /* ── Polish pass: animations, transitions, hover states ──── */
