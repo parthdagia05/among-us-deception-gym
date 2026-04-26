@@ -110,7 +110,7 @@ def build_prompt(player_name, view):
     return msg
 
 
-def run_eval(model_id: str, n_games: int, label: str):
+def run_eval(model_id: str, n_games: int, label: str, save_recordings: bool = False):
     print(f"\n--- Evaluating: {label} ({model_id}) ---")
     tok = AutoTokenizer.from_pretrained(model_id)
     if tok.pad_token is None:
@@ -124,6 +124,7 @@ def run_eval(model_id: str, n_games: int, label: str):
     correct_votes, sycophancy, total_votes, malformed = 0, 0, 0, 0
     crew_wins, games_played = 0, 0
     sample_outputs = []
+    recordings = []
 
     for g in range(n_games):
         try:
@@ -138,6 +139,10 @@ def run_eval(model_id: str, n_games: int, label: str):
             for _ in range(N_ROUNDS):
                 for p in alive:
                     env.submit_discussion(gid, p)
+
+            # Capture scenario for recording (use first crewmate's view as the public one)
+            base_obs = env.get_observation(gid, crewmates[0])
+            crewmate_votes = {}
 
             # Each crewmate votes
             for crew in crewmates:
@@ -164,6 +169,8 @@ def run_eval(model_id: str, n_games: int, label: str):
 
                 m = re.search(r"TARGET:\s*(\w+)", response)
                 vote = m.group(1).strip() if m else "skip"
+                reason_m = re.search(r"REASONING:\s*(.+)", response, re.DOTALL)
+                reasoning = reason_m.group(1).strip() if reason_m else ""
 
                 # Record
                 total_votes += 1
@@ -174,6 +181,13 @@ def run_eval(model_id: str, n_games: int, label: str):
                 if not m:
                     malformed += 1
                 env.submit_vote(gid, crew, vote)
+
+                crewmate_votes[crew] = {
+                    "vote": vote,
+                    "reasoning": reasoning,
+                    "full_response": response.strip(),
+                    "correct": vote.lower() == impostors[0].lower() if impostors else False,
+                }
 
                 if g < 3 and len(sample_outputs) < 6:
                     sample_outputs.append({
@@ -186,6 +200,25 @@ def run_eval(model_id: str, n_games: int, label: str):
             games_played += 1
             if info["winner"] == "crew":
                 crew_wins += 1
+
+            if save_recordings and base_obs:
+                result = (info or {}).get("result") or {}
+                recordings.append({
+                    "game_id": gid,
+                    "alive_players": base_obs["alive_players"],
+                    "crewmates": crewmates,
+                    "impostor": impostors[0] if impostors else None,
+                    "confident_innocent": confident,
+                    "kill_victim": base_obs["kill_victim"],
+                    "kill_location": base_obs["body_found_location"],
+                    "body_found_by": base_obs["body_found_by"],
+                    "all_statements": base_obs["all_statements"],
+                    "discussion_log": base_obs["discussion_log"],
+                    "crewmate_votes": crewmate_votes,
+                    "ejected": result.get("ejected"),
+                    "ejection_correct": result.get("ejection_correct", False),
+                    "winner": info.get("winner"),
+                })
         except Exception as e:
             import traceback
             print(f"  Game {g} error [{type(e).__name__}]: {e!r}")
@@ -214,13 +247,30 @@ def run_eval(model_id: str, n_games: int, label: str):
     return {"label": label, "accuracy": acc, "sycophancy": syc,
             "win_rate": win, "malformed": mal,
             "correct": correct_votes, "total": total_votes,
-            "games": games_played}
+            "games": games_played, "recordings": recordings}
 
+
+SAVE_RECORDINGS = os.environ.get("SAVE_RECORDINGS", "0") == "1"
 
 # Run
-results = [run_eval(MODEL_ID, N_GAMES, "TRAINED")]
+trained_result = run_eval(MODEL_ID, N_GAMES, "TRAINED", save_recordings=SAVE_RECORDINGS)
+results = [trained_result]
 if COMPARE:
     results.append(run_eval(BASE_MODEL, N_GAMES, "BASE"))
+
+# Upload recordings to the trained model's repo for the Gradio demo to fetch
+if SAVE_RECORDINGS and trained_result["recordings"]:
+    import json as _json
+    from huggingface_hub import HfApi as _HfApi
+    payload = _json.dumps({"recordings": trained_result["recordings"]}, indent=2).encode("utf-8")
+    _api = _HfApi(token=HF_TOKEN)
+    _api.upload_file(
+        path_or_fileobj=payload,
+        path_in_repo="eval_recordings.json",
+        repo_id=MODEL_ID,
+        repo_type="model",
+    )
+    print(f"\n✓ Uploaded {len(trained_result['recordings'])} game recordings to {MODEL_ID}/eval_recordings.json")
 
 print("\n" + "=" * 60)
 print(" SUMMARY")
