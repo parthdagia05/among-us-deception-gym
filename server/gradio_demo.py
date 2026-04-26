@@ -900,7 +900,7 @@ HERO_HTML = """
        onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='rgba(255,255,255,0.16)';">
       🤖 Trained Model
     </a>
-    <a href="https://github.com/parthdagia05/among-us-deception-gym/blob/main/blog/writeup.md" target="_blank"
+    <a href="https://github.com/parthdagia05/among-us-deception-gym/blob/main/blog/blog.MD" target="_blank"
        style="display:inline-flex;align-items:center;gap:6px;
               background:rgba(255,255,255,0.08);color:#ffffff;padding:9px 16px;
               border-radius:10px;text-decoration:none;border:1px solid rgba(255,255,255,0.16);
@@ -939,7 +939,7 @@ FOOTER_HTML = """
          style="color:#67e8f9;text-decoration:none;font-weight:600;font-size:0.92em;">HF Space</a>
       <a href="https://huggingface.co/parthdagia/among-us-multiagent-detective" target="_blank"
          style="color:#67e8f9;text-decoration:none;font-weight:600;font-size:0.92em;">Model</a>
-      <a href="https://github.com/parthdagia05/among-us-deception-gym/blob/main/blog/writeup.md" target="_blank"
+      <a href="https://github.com/parthdagia05/among-us-deception-gym/blob/main/blog/blog.MD" target="_blank"
          style="color:#67e8f9;text-decoration:none;font-weight:600;font-size:0.92em;">Blog</a>
     </div>
   </div>
