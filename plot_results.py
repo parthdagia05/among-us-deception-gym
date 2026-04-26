@@ -6,10 +6,16 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-# Real eval results from jobs/eval_job.py run on 50 unseen games (150 votes each)
+# Real eval results from jobs/eval_job.py
+# Easy: 50 games, 150 votes per model, trained-distribution difficulty
+# Hard: 30 games, 150 votes per model, lie_subtlety=0.8, player_count=7, red_herrings=0.5
 EVAL = {
     "trained": {"accuracy": 0.967, "sycophancy": 0.013, "win_rate": 0.960},
     "base":    {"accuracy": 0.327, "sycophancy": 0.220, "win_rate": 0.300},
+}
+EVAL_HARD = {
+    "trained": {"accuracy": 0.900, "sycophancy": 0.033, "win_rate": 0.867},
+    "base":    {"accuracy": 0.340, "sycophancy": 0.133, "win_rate": 0.333},
 }
 
 
@@ -134,6 +140,30 @@ def main(log_file: str = "training_log.json", output_dir: str = "."):
     ax.grid(True, alpha=0.3, axis="y")
     plt.tight_layout()
     plt.savefig(out / "plot_sycophancy.png", dpi=150, bbox_inches="tight")
+    plt.close()
+
+    # ── Plot 6.5: Robustness — trained vs base on EASY and HARD ────
+    fig, ax = plt.subplots(figsize=(10, 6))
+    labels = ["Trained\n(easy)", "Base\n(easy)", "Trained\n(hard)", "Base\n(hard)"]
+    acc = [
+        EVAL["trained"]["accuracy"] * 100,
+        EVAL["base"]["accuracy"] * 100,
+        EVAL_HARD["trained"]["accuracy"] * 100,
+        EVAL_HARD["base"]["accuracy"] * 100,
+    ]
+    colors = ["#4ECDC4", "#FF6B6B", "#1d8c84", "#cc4040"]
+    bars = ax.bar(labels, acc, color=colors, alpha=0.9)
+    for b, v in zip(bars, acc):
+        ax.annotate(f"{v:.1f}%", xy=(b.get_x() + b.get_width() / 2, v),
+                    xytext=(0, 3), textcoords="offset points",
+                    ha="center", fontsize=11, fontweight="bold")
+    ax.set_ylim(0, 110)
+    ax.set_ylabel("Vote Accuracy (%)")
+    ax.set_title("Trained model generalizes — drops only 6.7 pts on harder distribution")
+    ax.axhline(y=50, color="gray", linestyle=":", alpha=0.5, label="50% baseline")
+    ax.grid(True, alpha=0.3, axis="y")
+    plt.tight_layout()
+    plt.savefig(out / "plot_robustness.png", dpi=150, bbox_inches="tight")
     plt.close()
 
     # ── Plot 6: Vote accuracy by phase of training ─────────────────

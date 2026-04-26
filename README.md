@@ -19,6 +19,8 @@ A multi-agent reinforcement learning environment for training LLMs to detect dec
 | Live game environment (HF Space) | https://huggingface.co/spaces/parthdagia/among-us-deception-gym |
 | Trained model (HF Hub) | https://huggingface.co/parthdagia/among-us-multiagent-detective |
 | Source code (GitHub) | https://github.com/parthdagia05/among-us-deception-gym |
+| 📝 **Blog writeup** | [`blog/writeup.md`](blog/writeup.md) |
+| 🎬 **Video script** | [`blog/video_script.md`](blog/video_script.md) |
 
 ## 🧠 The Problem: Sycophancy Kills
 
@@ -37,7 +39,22 @@ After 1500 GRPO iterations on a single A10G, the trained model goes from **32.7%
 
 *Eval: 50 unseen games × 3 crewmate votes = 150 votes per model.*
 
-![Trained vs Base comparison](https://raw.githubusercontent.com/parthdagia05/among-us-deception-gym/main/plot_comparison.png)
+### 🧪 Robustness — held-out hard distribution
+
+We also ran an **out-of-distribution eval** (lie_subtlety=0.8, 7 players, red_herrings=0.5 — the model never saw this difficulty during training):
+
+| Distribution | Trained | Base | Δ |
+|---|---|---|---|
+| Easy (trained) | **96.7%** | 32.7% | +64.0 |
+| **Hard (OOD)** | **90.0%** | 34.0% | **+56.0** |
+
+The trained model drops only **6.7 pts** on the harder distribution; base is essentially unchanged at ~33%. The model learned a **transferable policy** — look for contradictions, ignore confidence — not just memorize easy cases.
+
+Sycophancy on hard: trained 3.3% vs base 13.3% (still 4× lower).
+
+![Robustness across distributions](https://raw.githubusercontent.com/parthdagia05/among-us-deception-gym/main/plot_robustness.png)
+
+![Trained vs Base comparison (easy)](https://raw.githubusercontent.com/parthdagia05/among-us-deception-gym/main/plot_comparison.png)
 
 ### Learning curve (real training metrics)
 

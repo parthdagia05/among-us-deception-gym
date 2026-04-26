@@ -10,6 +10,5 @@ build/
 .venv
 venv/
 *.log
-blog/
 .DS_Store
 

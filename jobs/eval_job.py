@@ -37,6 +37,17 @@ sys.path.insert(0, GYM_DIR)
 from server.environment_multi import MultiAgentAmongUsEnv
 from server.models import DifficultyConfig
 
+# ── Hard-mode difficulty (OOD eval) ────────────────────────────────────
+HARD_MODE = os.environ.get("HARD", "0") == "1"
+HARD_CONFIG = DifficultyConfig(
+    lie_subtlety=0.8,         # subtle corroboration gaps, no obvious task/location clashes
+    impostor_confidence=0.8,  # impostor sounds VERY confident
+    player_count=7,           # 7 players → 6 alive → 5 crewmates → harder vote
+    impostor_count=1,         # still locked to 1 by scenario_generator
+    red_herrings=0.5,         # crew also says ambiguous things
+    num_rounds=2,
+)
+
 from huggingface_hub import login
 HF_TOKEN = os.environ.get("HF_TOKEN")
 if HF_TOKEN:
@@ -128,7 +139,10 @@ def run_eval(model_id: str, n_games: int, label: str, save_recordings: bool = Fa
 
     for g in range(n_games):
         try:
-            game = env.reset(max_discussion_rounds=N_ROUNDS)
+            game = env.reset(
+                difficulty=HARD_CONFIG if HARD_MODE else None,
+                max_discussion_rounds=N_ROUNDS,
+            )
             gid = game["game_id"]
             crewmates = game["crewmates"]
             impostors = game["training_meta"]["impostor_names"]
