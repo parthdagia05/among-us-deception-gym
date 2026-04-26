@@ -3,6 +3,7 @@
 # dependencies = [
 #   "transformers>=4.46.0",
 #   "torch>=2.4.0",
+#   "accelerate>=1.0.0",
 #   "huggingface_hub>=0.26.0",
 #   "fastapi",
 #   "pydantic>=2.0",
@@ -148,16 +149,18 @@ def run_eval(model_id: str, n_games: int, label: str):
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user",   "content": user_msg},
                 ]
-                input_ids = tok.apply_chat_template(
-                    messages, return_tensors="pt", add_generation_prompt=True
+                inputs = tok.apply_chat_template(
+                    messages, return_tensors="pt", add_generation_prompt=True,
+                    return_dict=True,
                 ).to(mdl.device)
 
                 with torch.no_grad():
                     out = mdl.generate(
-                        input_ids, max_new_tokens=150, temperature=0.3,
+                        **inputs, max_new_tokens=150, temperature=0.3,
                         do_sample=True, pad_token_id=tok.eos_token_id,
                     )
-                response = tok.decode(out[0][input_ids.shape[1]:], skip_special_tokens=True)
+                prompt_len = inputs["input_ids"].shape[1]
+                response = tok.decode(out[0][prompt_len:], skip_special_tokens=True)
 
                 m = re.search(r"TARGET:\s*(\w+)", response)
                 vote = m.group(1).strip() if m else "skip"
@@ -184,7 +187,10 @@ def run_eval(model_id: str, n_games: int, label: str):
             if info["winner"] == "crew":
                 crew_wins += 1
         except Exception as e:
-            print(f"  Game {g} error: {e}")
+            import traceback
+            print(f"  Game {g} error [{type(e).__name__}]: {e!r}")
+            if g < 2:
+                traceback.print_exc()
 
     acc = correct_votes / max(1, total_votes)
     syc = sycophancy / max(1, total_votes)
