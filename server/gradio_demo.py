@@ -265,33 +265,45 @@ def _render_voting_screen(rec: dict) -> str:
 
 def _render_tablet(rec: dict, idx: int, total: int, mode: str) -> str:
     """Wraps either chat or voting screen in the tablet frame."""
-    # Inline SVG icons — always render crisp regardless of OS emoji font
-    chat_icon_svg = (
-        "<svg viewBox='0 0 24 24' width='26' height='26' fill='#1a1a2e'>"
-        "<path d='M20 2H4C2.9 2 2 2.9 2 4v14c0 1.1 0.9 2 2 2h2v3.5c0 0.4 0.5 0.6 0.8 0.4L11 20h9c1.1 0 2-0.9 2-2V4c0-1.1-0.9-2-2-2z'/>"
-        "<circle cx='8' cy='11' r='1.4' fill='#ffffff'/>"
-        "<circle cx='12' cy='11' r='1.4' fill='#ffffff'/>"
-        "<circle cx='16' cy='11' r='1.4' fill='#ffffff'/>"
-        "</svg>"
-    )
-    vote_icon_svg = (
-        "<svg viewBox='0 0 24 24' width='26' height='26' fill='#1a1a2e'>"
-        "<path d='M3 5h18v3H3zM3 11h18v3H3zM3 17h18v3H3z' opacity='0.3'/>"
-        "<path d='M2 4l3 3 5-5' stroke='#1a1a2e' stroke-width='2.5' fill='none' "
-        "stroke-linecap='round' stroke-linejoin='round'/>"
-        "<rect x='9' y='5' width='13' height='3' rx='1' fill='#1a1a2e'/>"
-        "<rect x='9' y='11' width='13' height='3' rx='1' fill='#1a1a2e'/>"
-        "<rect x='9' y='17' width='13' height='3' rx='1' fill='#1a1a2e'/>"
-        "</svg>"
-    )
     if mode == "voting":
         body_html = _render_voting_screen(rec)
-        toggle_icon = chat_icon_svg
-        toggle_title = "Switch to chat view"
     else:
         body_html = _render_chat_screen(rec)
-        toggle_icon = vote_icon_svg
-        toggle_title = "Switch to vote view"
+
+    # Tab bar inside the tablet — clear "Chat | Vote" toggle.
+    # Clicking the inactive tab fires the hidden Gradio button to swap mode.
+    chat_active = mode == "chat"
+    vote_active = mode == "voting"
+    chat_click = "" if chat_active else "document.querySelector('#tablet-toggle-trigger button').click()"
+    vote_click = "" if vote_active else "document.querySelector('#tablet-toggle-trigger button').click()"
+
+    def tab(label, icon, is_active, onclick):
+        active_bg = "linear-gradient(135deg,#c1121f,#5a189a)" if is_active else "transparent"
+        active_color = "#ffffff" if is_active else "#3a3a4a"
+        active_shadow = (
+            "box-shadow:0 2px 10px rgba(193,18,31,0.35),"
+            "inset 0 1px 0 rgba(255,255,255,0.18);"
+            if is_active else "box-shadow:none;"
+        )
+        cursor = "default" if is_active else "pointer"
+        weight = "800" if is_active else "700"
+        return (
+            f"<div onclick=\"{onclick}\" "
+            f"style='flex:1;padding:11px 18px;text-align:center;border-radius:10px;"
+            f"background:{active_bg};color:{active_color};{active_shadow}"
+            f"font-weight:{weight};font-size:1em;letter-spacing:0.4px;cursor:{cursor};"
+            f"transition:all 0.18s ease;user-select:none;display:flex;align-items:center;"
+            f"justify-content:center;gap:8px;'>{icon} {label}</div>"
+        )
+
+    tab_bar = (
+        "<div style='display:flex;gap:6px;background:rgba(0,0,0,0.06);"
+        "padding:4px;border-radius:13px;margin:0 22px 14px;"
+        "border:1px solid rgba(0,0,0,0.08);'>"
+        + tab("CHAT", "💬", chat_active, chat_click)
+        + tab("VOTE", "🗳", vote_active, vote_click)
+        + "</div>"
+    )
 
     return f"""
 <div style="max-width:880px;margin:0 auto;padding:0 4px;font-family:-apple-system,system-ui,sans-serif;">
@@ -309,32 +321,21 @@ def _render_tablet(rec: dict, idx: int, total: int, mode: str) -> str:
                 box-shadow:inset 0 2px 6px rgba(0,0,0,0.15);
                 overflow:hidden;">
 
-      <!-- Tablet header -->
-      <div style="background:rgba(0,0,0,0.04);padding:14px 22px;
-                  display:flex;justify-content:space-between;align-items:center;
-                  border-bottom:1px solid rgba(0,0,0,0.08);">
-        <div style="font-size:1.5em;font-weight:900;color:#fff;
-                    text-shadow:2px 2px 0 #1a1a2e,-1px -1px 0 #1a1a2e,
-                                1px -1px 0 #1a1a2e,-1px 1px 0 #1a1a2e;
-                    letter-spacing:1.5px;">
+      <!-- Tablet header (centered title) -->
+      <div style="background:rgba(0,0,0,0.04);padding:14px 22px 6px;
+                  text-align:center;
+                  border-bottom:1px solid rgba(0,0,0,0.06);">
+        <div style="font-size:1.45em;font-weight:900;color:#1a2e44;
+                    letter-spacing:1.2px;font-family:'Trebuchet MS',sans-serif;">
           Who Is The Impostor?
-        </div>
-        <div title="{toggle_title}"
-             onclick="document.querySelector('#tablet-toggle-trigger button').click()"
-             style="width:48px;height:48px;background:#ffffff;border-radius:12px;
-                    display:flex;align-items:center;justify-content:center;
-                    border:2px solid #5a6a7a;
-                    box-shadow:0 2px 6px rgba(0,0,0,0.15);
-                    cursor:pointer;user-select:none;
-                    transition:transform 0.15s, box-shadow 0.15s, background 0.15s;"
-             onmouseover="this.style.transform='translateY(-1px) scale(1.05)';this.style.boxShadow='0 6px 14px rgba(0,0,0,0.2)';this.style.background='#f3f4f6';"
-             onmouseout="this.style.transform='';this.style.boxShadow='0 2px 6px rgba(0,0,0,0.15)';this.style.background='#ffffff';">
-          {toggle_icon}
         </div>
       </div>
 
+      <!-- Tab bar inside the iPad — Chat / Vote toggle -->
+      <div style="padding:14px 0 0;">{tab_bar}</div>
+
       <!-- Tablet body — scrollable -->
-      <div style="padding:18px 22px;max-height:640px;overflow-y:auto;">
+      <div style="padding:6px 22px 22px;max-height:600px;overflow-y:auto;">
         {body_html}
       </div>
     </div>
@@ -504,6 +505,116 @@ CUSTOM_CSS = """
   background: #d32030 !important;
   color: #ffffff !important;
 }
+
+/* ── App header (top bar above hero) ────────────────────── */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 22px;
+  background: linear-gradient(90deg, #0d1421 0%, #1a1530 50%, #0d1421 100%);
+  border-bottom: 1px solid rgba(103, 232, 249, 0.15);
+  margin: -16px -16px 16px;
+  border-radius: 0;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+.app-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.app-logo { font-size: 1.4em; }
+.app-brand {
+  font-weight: 800;
+  font-size: 1.1em;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+}
+.app-tag {
+  font-size: 0.68em;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  color: #67e8f9;
+  background: rgba(103, 232, 249, 0.12);
+  padding: 3px 9px;
+  border-radius: 12px;
+  border: 1px solid rgba(103, 232, 249, 0.25);
+}
+.app-event {
+  font-size: 0.82em;
+  color: #b8c2d8;
+  letter-spacing: 0.3px;
+}
+
+/* ── App footer (bottom credits) ────────────────────────── */
+.app-footer {
+  margin: 32px -16px -16px;
+  padding: 24px 22px 18px;
+  background: linear-gradient(180deg, #0a0e1a 0%, #060914 100%);
+  border-top: 1px solid rgba(103, 232, 249, 0.18);
+  color: #b8c2d8;
+}
+.app-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.app-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  font-size: 1.05em;
+}
+.app-footer-links { display: flex; gap: 14px; flex-wrap: wrap; }
+.app-footer-links a {
+  color: #67e8f9 !important;
+  text-decoration: none !important;
+  font-weight: 600;
+  font-size: 0.92em;
+  transition: color 0.15s ease;
+}
+.app-footer-links a:hover {
+  color: #ffffff !important;
+}
+.app-footer-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+  justify-content: center;
+}
+.footer-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  border: 1px solid;
+}
+.footer-pill.cyan   { color: #67e8f9; background: rgba(103, 232, 249, 0.10); border-color: rgba(103, 232, 249, 0.3); }
+.footer-pill.purple { color: #c084fc; background: rgba(192, 132, 252, 0.10); border-color: rgba(192, 132, 252, 0.3); }
+.footer-pill.red    { color: #ff8a90; background: rgba(255, 138, 144, 0.10); border-color: rgba(255, 138, 144, 0.3); }
+.footer-pill.green  { color: #6ee7b7; background: rgba(110, 231, 183, 0.10); border-color: rgba(110, 231, 183, 0.3); }
+.footer-pill.amber  { color: #fcd34d; background: rgba(252, 211, 77, 0.10); border-color: rgba(252, 211, 77, 0.3); }
+.app-footer-credit {
+  text-align: center;
+  font-size: 0.86em;
+  color: #6b7686;
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.app-footer-credit a { color: #a8b3c8 !important; text-decoration: none !important; font-weight: 600; }
+.app-footer-credit a:hover { color: #67e8f9 !important; }
+
+/* ── Section accent colors (per-tab tint) ───────────────── */
+.gradio-container > div[id^="component-"]:has(.gr-group) { transition: background 0.4s ease; }
 
 /* hidden trigger for tablet-header toggle icon */
 .hidden-trigger {
@@ -704,6 +815,49 @@ HERO_HTML = """
 """
 
 
+HEADER_HTML = """
+<div class="app-header">
+  <div class="app-header-left">
+    <span class="app-logo">🔪</span>
+    <span class="app-brand">Among Us Deception Gym</span>
+    <span class="app-tag">RL ENVIRONMENT · OPENENV</span>
+  </div>
+  <div class="app-header-right">
+    <span class="app-event">Meta OpenEnv Hackathon · April 2026</span>
+  </div>
+</div>
+"""
+
+
+FOOTER_HTML = """
+<div class="app-footer">
+  <div class="app-footer-row">
+    <div class="app-footer-brand">
+      <span class="app-logo">🔪</span>
+      <strong>Among Us Deception Gym</strong>
+    </div>
+    <div class="app-footer-links">
+      <a href="https://github.com/parthdagia05/among-us-deception-gym" target="_blank">GitHub</a>
+      <a href="https://huggingface.co/spaces/parthdagia/among-us-deception-gym" target="_blank">HF Space</a>
+      <a href="https://huggingface.co/parthdagia/among-us-multiagent-detective" target="_blank">Model</a>
+      <a href="https://github.com/parthdagia05/among-us-deception-gym/blob/main/blog/writeup.md" target="_blank">Blog</a>
+    </div>
+  </div>
+  <div class="app-footer-stack">
+    <span class="footer-pill cyan">Qwen 2.5 1.5B + LoRA</span>
+    <span class="footer-pill purple">GRPO via TRL</span>
+    <span class="footer-pill red">HF Jobs · A10G</span>
+    <span class="footer-pill green">FastAPI · OpenEnv spec</span>
+    <span class="footer-pill amber">Gradio</span>
+  </div>
+  <div class="app-footer-credit">
+    Built by <a href="https://github.com/parthdagia05" target="_blank">parthdagia05</a> for the Meta OpenEnv Hackathon ·
+    96.7% accuracy · 1.3% sycophancy · 17× resistance to confident liars
+  </div>
+</div>
+"""
+
+
 def _nav_classes(is_active: bool) -> list[str]:
     return ["nav-btn", "nav-btn-active"] if is_active else ["nav-btn"]
 
@@ -714,6 +868,7 @@ def build_demo() -> gr.Blocks:
         theme=gr.themes.Soft(primary_hue="red", secondary_hue="purple"),
         css=CUSTOM_CSS,
     ) as demo:
+        gr.HTML(HEADER_HTML)
         gr.HTML(HERO_HTML)
 
         idx_state = gr.State(0)
@@ -891,6 +1046,8 @@ def build_demo() -> gr.Blocks:
         nav_results.click(lambda: _show("results"), outputs=nav_outputs)
         nav_safeguards.click(lambda: _show("safeguards"), outputs=nav_outputs)
         nav_api.click(lambda: _show("api"), outputs=nav_outputs)
+
+        gr.HTML(FOOTER_HTML)
 
     return demo
 
