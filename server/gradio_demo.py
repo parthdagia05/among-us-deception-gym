@@ -39,6 +39,56 @@ def avatar(name: str) -> str:
     )
 
 
+def crewmate_avatar(name: str, size: int = 44) -> str:
+    """Big circular avatar — Among Us chat-screen style."""
+    bg = PLAYER_BG.get(name, "#666")
+    text_color = "#1a1a1a" if name in ("Yellow", "White") else "#ffffff"
+    return (
+        f"<div style='width:{size}px;height:{size}px;background:{bg};"
+        f"border-radius:50%;display:flex;align-items:center;justify-content:center;"
+        f"font-weight:800;font-size:{int(size * 0.45)}px;color:{text_color};"
+        f"flex-shrink:0;box-shadow:0 2px 5px rgba(0,0,0,0.15);"
+        f"border:2px solid rgba(255,255,255,0.8);'>"
+        f"{name[0]}</div>"
+    )
+
+
+def chat_bubble(name: str, message: str, side: str = "left") -> str:
+    """Among-Us-style chat bubble. Avatar on `side`, bubble next to it."""
+    bg = PLAYER_BG.get(name, "#666")
+    avatar_html = crewmate_avatar(name)
+    name_align = "right" if side == "right" else "left"
+    bubble = (
+        f"<div style='background:#ffffff;border:1px solid #e1e4e8;border-radius:14px;"
+        f"padding:10px 14px;box-shadow:0 1px 3px rgba(0,0,0,0.06);"
+        f"max-width:78%;min-width:120px;'>"
+        f"<div style='font-weight:800;color:{bg};font-size:0.88em;"
+        f"margin-bottom:3px;text-align:{name_align};letter-spacing:0.3px;'>{name}</div>"
+        f"<div style='color:#222;line-height:1.45;font-size:0.95em;'>{message}</div>"
+        f"</div>"
+    )
+    if side == "right":
+        return (
+            "<div style='display:flex;align-items:flex-start;gap:10px;"
+            "margin:8px 0;justify-content:flex-end;'>"
+            f"{bubble}{avatar_html}"
+            "</div>"
+        )
+    return (
+        "<div style='display:flex;align-items:flex-start;gap:10px;margin:8px 0;'>"
+        f"{avatar_html}{bubble}"
+        "</div>"
+    )
+
+
+def _bubble_side(name: str, alive_players: list) -> str:
+    """Stable left/right side based on player position in the lobby."""
+    try:
+        return "left" if alive_players.index(name) % 2 == 0 else "right"
+    except ValueError:
+        return "left"
+
+
 def _load_recordings() -> list:
     global _RECORDINGS_LOADED
     if _RECORDINGS_LOADED:
@@ -105,36 +155,51 @@ def _render_meeting_header(rec: dict, idx: int, total: int) -> str:
 """
 
 
+def _chat_screen_wrap(inner_html: str) -> str:
+    """Wraps content in an Among-Us-meeting-screen-style frame."""
+    return (
+        "<div style='background:repeating-linear-gradient(45deg,"
+        "#dde3ea 0px,#dde3ea 2px,#e7ecf2 2px,#e7ecf2 14px);"
+        "padding:12px;border-radius:10px;border:2px solid #b9c2cc;"
+        "box-shadow:inset 0 1px 3px rgba(0,0,0,0.08);'>"
+        f"{inner_html}</div>"
+    )
+
+
 def _render_statements(rec: dict) -> str:
-    rows = "".join(
-        f"<div style='padding:8px 12px;margin:4px 0;background:#f8f9fa;"
-        f"border-radius:6px;line-height:1.5;'>{avatar(name)} "
-        f"<span style='color:#444;font-style:italic;'>\"{stmt}\"</span></div>"
+    alive = rec.get("alive_players", [])
+    inner = "".join(
+        chat_bubble(name, f'"{stmt}"', side=_bubble_side(name, alive))
         for name, stmt in rec["all_statements"].items()
     )
-    return f"<div>{rows}</div>"
+    return _chat_screen_wrap(inner)
 
 
 def _render_debate(rec: dict) -> str:
     if not rec.get("discussion_log"):
         return _empty_section("(no debate transcript)")
+    alive = rec.get("alive_players", [])
     rounds: dict[int, list] = {}
     for e in rec["discussion_log"]:
         rounds.setdefault(e["round"], []).append(e)
+
     out = []
     for r_num in sorted(rounds.keys()):
         out.append(
-            f"<div style='font-weight:700;color:#5a189a;margin:8px 0 6px;"
-            f"font-size:0.82em;text-transform:uppercase;letter-spacing:0.5px;'>"
-            f"🔁 Round {r_num + 1}</div>"
+            f"<div style='font-weight:700;color:#5a189a;margin:10px 0 4px;"
+            f"font-size:0.78em;text-transform:uppercase;letter-spacing:1px;"
+            f"text-align:center;background:#ffffff;border-radius:12px;"
+            f"padding:4px 10px;display:inline-block;"
+            f"border:1px solid #e1e4e8;'>🔁 Round {r_num + 1}</div>"
         )
+        out.append("<div>")
         for e in rounds[r_num]:
-            out.append(
-                f"<div style='padding:8px 12px;margin:3px 0;background:#fffaf0;"
-                f"border-left:3px solid #ffb703;border-radius:4px;line-height:1.45;'>"
-                f"{avatar(e['player_name'])} {e['statement']}</div>"
-            )
-    return f"<div>{''.join(out)}</div>"
+            out.append(chat_bubble(
+                e["player_name"], e["statement"],
+                side=_bubble_side(e["player_name"], alive),
+            ))
+        out.append("</div>")
+    return _chat_screen_wrap("".join(out))
 
 
 def _render_votes(rec: dict) -> str:
