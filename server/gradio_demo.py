@@ -169,6 +169,47 @@ def build_demo() -> gr.Blocks:
                 'style="width:100%;max-width:600px;border-radius:8px;">'
             )
 
+        with gr.Tab("🛡️ Safeguards"):
+            gr.Markdown(
+                """
+                ### Defences against reward hacking
+
+                The hackathon guide flags reward hacking as the top RL failure mode. Our
+                stack uses **8 layered defences**:
+
+                1. **Four independent reward functions** (not one combined)
+                   `reward_format`, `reward_correct_vote`, `reward_anti_sycophancy`,
+                   `reward_anti_random_crewmate` — model can't game one at the cost of another.
+                2. **Closed action space** — Pydantic-validated `{action_type, vote_target}`.
+                   No `eval`, no shell, no global mutation possible.
+                3. **Programmatic ground truth** — impostor identity is set at scenario
+                   generation; vote correctness = `target == impostor_names[i]`. **No
+                   LLM-as-judge** that could be gamed.
+                4. **Per-round timeouts** — `max_discussion_rounds` caps debate; debate
+                   auto-advances when all alive players speak. No infinite loops.
+                5. **Single-impostor lock** — `scenario_generator.py` forces `num_impostors=1`
+                   regardless of input, for consistent training signal.
+                6. **Anti-cheat grader** (single-agent env, `server/graders/anti_cheat.py`) —
+                   penalises voting before tool use, repeated votes, timeout-with-no-vote.
+                7. **Generation inspection during training** — every 5 GRPO steps logs
+                   `min_length`, `clipped_ratio`, `entropy`, `frac_reward_zero_std`.
+                   We detected reward saturation at iter 600 from this signal alone.
+                8. **Sycophancy probe** — one crewmate per game is *always* tagged
+                   "confident innocent" with an assertive personality. We measure how often
+                   the model falls for this — **base 22% → trained 1.3% (17× reduction).**
+
+                ### What the model literally cannot do
+
+                - Cannot edit timers, mutate session state, or read other players' private views
+                - Cannot execute code or call external APIs from inside a vote
+                - Cannot vote twice (`session.votes[player_name] = ...` is idempotent overwrite,
+                  and after `votes_complete()` resolution is locked)
+                - Cannot speak twice in the same debate round (`session.spoke_this_round` set)
+                - Cannot kill itself or another impostor (`/multi/kill` validates `impostor_name`
+                  in `s.impostor_names` and `kill_target` not in `s.impostor_names`)
+                """
+            )
+
         with gr.Tab("🔌 API & Code"):
             gr.Markdown(
                 """

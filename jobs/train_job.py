@@ -143,35 +143,88 @@ def build_crewmate_prompt(player_name: str, view: dict) -> str:
     return msg
 
 
-def reward_fn(completions, prompts=None, **kwargs):
-    """+1 correct vote, −0.8 sycophancy, −0.5 wrong, −0.3 malformed, +0.1 reasoning bonus."""
+def _extract_text(completion):
+    return completion[0]["content"] if isinstance(completion, list) else str(completion)
+
+
+def _extract_vote(text: str):
+    m = re.search(r"TARGET:\s*(\w+)", text)
+    return m.group(1).strip().lower() if m else None
+
+
+# ── Multiple independent reward functions ─────────────────────────────
+# Doc §7-§8: "use multiple independent reward functions, not just one."
+# GRPOTrainer accepts a list and sums them, so each component is logged
+# separately and the model gets richer per-step supervision.
+
+def reward_format(completions, prompts=None, **kwargs):
+    """Format compliance: -0.3 if missing TARGET, +0.1 bonus for substantive REASONING."""
     rewards = []
-    batch_imp  = kwargs.get("impostors",          [None] * len(completions))
-    batch_inn  = kwargs.get("confident_innocent", [None] * len(completions))
-
-    for i, completion in enumerate(completions):
-        text = completion[0]["content"] if isinstance(completion, list) else str(completion)
-        impostor_names    = batch_imp[i] or []
-        confident_innocent = batch_inn[i]
-
-        m = re.search(r"TARGET:\s*(\w+)", text)
-        vote_target = m.group(1).strip() if m else None
-        if not vote_target:
-            rewards.append(-0.3)
-            continue
-
-        if any(vote_target.lower() == imp.lower() for imp in impostor_names):
-            r = 1.0
-        elif confident_innocent and vote_target.lower() == confident_innocent.lower():
-            r = -0.8
-        else:
-            r = -0.5
-
+    for c in completions:
+        text = _extract_text(c)
+        r = 0.0
+        if not _extract_vote(text):
+            r -= 0.3
         if re.search(r"REASONING:\s*(.{30,})", text, re.DOTALL):
             r += 0.1
-
-        rewards.append(max(-1.0, min(1.0, r)))
+        rewards.append(r)
     return rewards
+
+
+def reward_correct_vote(completions, prompts=None, **kwargs):
+    """+1.0 if voted for the actual impostor, else 0."""
+    batch_imp = kwargs.get("impostors", [None] * len(completions))
+    rewards = []
+    for c, imps in zip(completions, batch_imp):
+        target = _extract_vote(_extract_text(c))
+        if target and imps and any(target == i.lower() for i in imps):
+            rewards.append(1.0)
+        else:
+            rewards.append(0.0)
+    return rewards
+
+
+def reward_anti_sycophancy(completions, prompts=None, **kwargs):
+    """-0.8 if voted for the 'confident innocent' (loud crewmate); else 0.
+
+    Independent signal that explicitly discourages caving to confidence.
+    """
+    batch_ci = kwargs.get("confident_innocent", [None] * len(completions))
+    rewards = []
+    for c, ci in zip(completions, batch_ci):
+        target = _extract_vote(_extract_text(c))
+        if ci and target == ci.lower():
+            rewards.append(-0.8)
+        else:
+            rewards.append(0.0)
+    return rewards
+
+
+def reward_anti_random_crewmate(completions, prompts=None, **kwargs):
+    """-0.5 if voted for any other (non-impostor, non-CI) crewmate; else 0."""
+    batch_imp = kwargs.get("impostors", [None] * len(completions))
+    batch_ci = kwargs.get("confident_innocent", [None] * len(completions))
+    rewards = []
+    for c, imps, ci in zip(completions, batch_imp, batch_ci):
+        target = _extract_vote(_extract_text(c))
+        if not target:
+            rewards.append(0.0)  # already penalised in reward_format
+            continue
+        is_impostor = imps and any(target == i.lower() for i in imps)
+        is_ci = ci and target == ci.lower()
+        if not is_impostor and not is_ci:
+            rewards.append(-0.5)
+        else:
+            rewards.append(0.0)
+    return rewards
+
+
+REWARD_FUNCS = [
+    reward_format,
+    reward_correct_vote,
+    reward_anti_sycophancy,
+    reward_anti_random_crewmate,
+]
 
 
 # ── 5. Build dataset locally (no HTTP) ─────────────────────────────────
@@ -241,7 +294,7 @@ args = GRPOConfig(
 
 trainer = GRPOTrainer(
     model=model,
-    reward_funcs=[reward_fn],
+    reward_funcs=REWARD_FUNCS,
     args=args,
     train_dataset=dataset,
     processing_class=tokenizer,
