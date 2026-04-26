@@ -17,20 +17,22 @@ env = AmongUsEnv()
 multi_env = MultiAgentAmongUsEnv()
 
 
-@app.get("/")
-def root():
+@app.get("/api")
+def api_info():
+    """API endpoint listing. The Gradio demo lives at /."""
     return {
         "name": "Among Us Deception Gym",
         "version": "1.0.0",
         "status": "ok",
-        "live_demo": "/demo",
+        "live_demo": "/",
         "endpoints": [
-            "/demo (Gradio UI)",
-            "/health", "/reset", "/step", "/state", "/ws",
+            "/ (Gradio UI — live demo)",
+            "/api", "/health",
+            "/reset", "/step", "/state", "/ws",
             "/multi/reset", "/multi/discuss", "/multi/vote", "/multi/kill",
             "/multi/observation/{game_id}/{player_name}",
             "/multi/resolve/{game_id}", "/multi/session/{game_id}",
-        ]
+        ],
     }
 
 
@@ -141,12 +143,13 @@ def multi_session(game_id: str):
     return info
 
 
-# Mount Gradio live demo at /demo (lazy import so failures don't break API)
+# Mount Gradio live demo at / (root) so judges land on the demo immediately.
+# JSON API listing lives at /api. Lazy import so failures don't break the API.
 try:
     import gradio as gr
     from server.gradio_demo import demo as gradio_demo
 
-    app = gr.mount_gradio_app(app, gradio_demo, path="/demo")
+    app = gr.mount_gradio_app(app, gradio_demo, path="/")
 except Exception as exc:  # noqa: BLE001
     print(f"[gradio] not mounted: {exc}")
 
