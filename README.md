@@ -37,13 +37,13 @@ After 1500 GRPO iterations on a single A10G, the trained model goes from **32.7%
 
 *Eval: 50 unseen games × 3 crewmate votes = 150 votes per model.*
 
-![Trained vs Base comparison](plot_comparison.png)
+![Trained vs Base comparison](https://raw.githubusercontent.com/parthdagia05/among-us-deception-gym/main/plot_comparison.png)
 
 ### Learning curve (real training metrics)
 
 The model converges in ~500 iterations and saturates at perfect reward by iteration 600.
 
-![GRPO reward over 1500 iterations](plot_reward.png)
+![GRPO reward over 1500 iterations](https://raw.githubusercontent.com/parthdagia05/among-us-deception-gym/main/plot_reward.png)
 
 ## 🎮 Game Mechanics
 
